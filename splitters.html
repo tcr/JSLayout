@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Splitter Test</title>
+<style>
+div {
+margin: 0;
+}
+
+#panel, #toppanel, #bottompanel {
+padding: 1px 0.5em;
+}
+
+#container {
+margin: 0;
+}
+
+#splitter1 {
+width: 2px;
+background: #bbb;
+border-left: 1px solid #777;
+border-right: 1px solid #ddd;
+cursor: w-resize;
+}
+
+#splitter2 {
+height: 2px;
+background: #bbb;
+border-top: 1px solid #777;
+border-bottom: 1px solid #ddd;
+cursor: n-resize;
+}
+
+#toppanel {
+height: 10em;
+background: #eef;
+overflow: auto;
+}
+
+#bottompanel {
+background: #efe;
+overflow: auto;
+}
+
+#panel {
+width: 10em;
+background: #fee;
+overflow: auto;
+}
+</style>
+
+<script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
+<script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
+<script src="layout/orientation.js"></script>
+<link href="layout/orientation.css" rel="stylesheet">
+<script src="layout/layout.js"></script>
+
+<script>
+// main script
+new function () {
+	eval(base2.namespace);
+	eval(base2.Layout.namespace);
+
+	// loader
+	DOM.bind(document);
+	document.addEventListener('DOMContentLoaded', function () {
+		// add layout
+		var layout = new FullLayoutManager(document);
+		layout.setOrientation(document.querySelector('#container'), 'horizontal');
+		document.querySelectorAll('#container, #panel, #splitter1, #content, #bottompanel').forEach(function (element) {
+			layout.setFlexibleProperty(element, 'height');
+		});
+		document.querySelectorAll('#container, #content, #toppanel, #splitter2, #bottompanel').forEach(function (element) {
+			layout.setFlexibleProperty(element, 'width');
+		});
+		layout.calculate();
+		
+		// object references
+		var container = document.querySelector('#container');
+		var splitter1 = document.querySelector('#splitter1');
+		var panel = document.querySelector('#panel');
+		var content = document.querySelector('#content');
+		
+		// get splitter padding
+		var rect = panel.getBoundingClientRect(), computed = document.defaultView.getComputedStyle(panel, null);
+		var offset = rect.right - parseFloat(computed.getPropertyValue('width'));
+		// create the splitter
+		var moveHandler = function (e) {
+			panel.style.width = Math.max(Math.min(e.pageX - rect.left - offset, 500), 0) + 'px';
+//[TODO] update orientation minimums
+			layout.recalculate();
+		}
+		splitter1.addEventListener('mousedown', function (e) {
+			// get the left offset of the panel
+			document.addEventListener('mousemove', moveHandler, false);
+			container.style.cursor = 'w-resize';
+			e.preventDefault();
+		}, false);
+		document.addEventListener('mouseup', function () {
+			document.removeEventListener('mousemove', moveHandler, false);
+			container.style.cursor = 'auto';
+		}, false);
+	}, false);
+};
+</script>
+</head>
+
+<body>
+<div id="container">
+<div id="panel">
+<p>This is a side panel. Drag the splitter to the right, up to 500px!</p>
+</div>
+<div id="splitter1"></div>
+<div id="content">
+<div id="toppanel">
+<h1>Splitter Test</h1>
+<p>This is a test using a splitter.</p>
+</div>
+<div id="splitter2"></div>
+<div id="bottompanel">
+<h1>Bottom panel</h1>
+<p>This is a test using two splitters.</p>
+</div>
+</div>
+</div>
+</body>
+</html>

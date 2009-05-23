@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Min max testing la la la </title>
+<style>
+#float {width: min-intrinsic; float: left; border: 2px solid black; padding: 10px; background: red; }
+#content { background: blue; width: -moz-max-content; overflow: hidden; widthd: intrinsic; padding: 5px}
+#min { width: min-intrinsic; background: lightgreen; overflow: hidden }
+</style>
+<script>
+document.onclick = function (e) {
+e.target.style.width = '1px';
+e.target.style.width = e.target.scrollWidth + 'px';
+}
+</script>
+</head>
+<body>
+<h3>Max-intrinsic testing:</h3>
+<div id="content">
+<div id="float"> Here be a float it is magical mystical wonderful</div>
+<div id="float"> Here be a float it is magical mystical wonderful</div>
+<div id="float"> Here be a float it is magical mystical wonderful</div>
+<div id="float"> Here be a float it is magical mystical wonderful</div>
+<div id="float"> Here be a float it is magical mystical wonderful</div>
+</div>
+<h3>Min-intrinsic testing:</h3>
+<div id="min">
+<div id="float"  style="width: min-intrinsic"> Here be a float it is magical mystical wonderful</div>
+<div id="float"> Here be a float it is magical mystical wonderful</div>
+</div>
+</body>
+</html>

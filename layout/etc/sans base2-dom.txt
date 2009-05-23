@@ -1,0 +1,10 @@
+[X] querySelector(All)
+[X] getPropertyValue/removeProperty/setProperty
+[X] detect
+[X] getComputedPropertyValue
+[-] getBoundingClientRect
+[X] getUserData
+[X] compareDocumentPosition (contains)
+[X] classList
+
+[-] bind
