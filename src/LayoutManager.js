@@ -176,8 +176,7 @@ var LayoutManager = OrientationManager.extend({
 		for (var i = 0; i < children.length; i++) {
 			// calculate flex unit (against flow)
 			if (axis != this.getOrientation(parent)) {
-//[TODO] should be margin-box dimension (safari)
-				contentSize = (new CSSBox(children[i])).getBoxDimension('border', axis);
+				contentSize = (new CSSBox(children[i])).getBoxDimension('margin', axis);
 				divisor = this.layoutData.get(children[i], 'count-' + axis);
 				oldFlexUnit = this.layoutData.get(children[i], 'unit-' + axis);
 				// content box dimensions may be larger than flex unit; subtract from content size

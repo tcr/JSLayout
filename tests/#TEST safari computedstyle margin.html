@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Min max testing la la la </title>
+<style>
+#container { background: lightgrey; border: 2px solid black; width: 500px; overflow: hidden; }
+p { border: 2px solid black; margin: 10px; padding: 10px; background: white; width: 100px; clear: left; }
+</style>
+<script>
+window.onload = function (e) {
+var nodes = document.getElementsByTagName('p');
+for (var i = 0, p; p = nodes.item(i); i++) {
+alert(window.getComputedStyle(p, null).getPropertyValue('margin-right'));
+}
+}
+</script>
+</head>
+<body>
+<div id="container">
+<p>This box is 100px wide, and has a right-margin of 10px.</p>
+<p style="float: left">This box is 100px wide, floated, and has a right-margin of 10px.</p>
+<p style="margin-left: auto;">This box is 100px wide, positioned, and has a right-margin of 10px.</p>
+</div>
+</body>
+</html>

@@ -105,16 +105,26 @@ CSSBox.prototype = {
 	},
 	getCSSLength: function (property) {
 		property = this._normalizeProperty(property);
-		if (this.view.getComputedStyle)
-			return parseFloat(this.view.getComputedStyle(this.element, null).getPropertyValue(property));
+		if (this.view.getComputedStyle) {
+			var computedStyle = this.view.getComputedStyle(this.element, null);
+			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
+			if (/KTML|Webkit/i.test(navigator.userAgent) && property == 'margin-right' &&
+			    computedStyle.getPropertyValue('float') == 'none') {
+				return Math.max(parseFloat(DOMUtils.swapStyles(this.element, {marginLeft: 'auto'}, bind(function () {
+					return this.view.getComputedStyle(this.element, null).getPropertyValue(property);
+				}, this))), 0);
+			}
+			// return computed style value
+			return parseFloat(computedStyle.getPropertyValue(property));
+		}
 		else if (this.element.currentStyle) {
 			// getComputedStyle emulation for IE (courtesy Dean Edwards)
 			var currentVal = this.element.currentStyle[this._toCamelCase(property)];
 			if (property.match(/^(width|height)$/))
 				return this._shiftDimension(this.getBoxDimension('padding', {width: 'horizontal', height: 'vertical'}[property]), 'padding', false);
-			if (/^\d+(px)?$/i.test(currentVal) || currentVal == 'none')
+			if (/^\-?\d+(px)?$/i.test(currentVal) || currentVal == 'none')
 				return parseFloat(currentVal) || 0;
-			if (property.match(/^border/) && !(/^\d+/.test(currentVal))) { // border-named values
+			if (property.match(/^border/) && !(/^\-\d+/.test(currentVal))) { // border-named values
 				var runtimeStyleVal = this.element.runtimeStyle.borderTopWidth;
 				this.element.runtimeStyle.borderTopWidth = currentVal;
 				var value = this.element.clientTop;
@@ -336,8 +346,7 @@ var OrientationManager = base2.Base.extend({
 		} else {
 			for (var size = 0, child = element.firstChild; child; child = child.nextSibling)
 				if (child.nodeType == 1)
-//[TODO] should be margin-box dimension (safari)
-					size += (new CSSBox(child)).getBoxDimension('border', axis);
+					size += (new CSSBox(child)).getBoxDimension('margin', axis);
 			return size;
 		}
 	}
@@ -587,8 +596,7 @@ var LayoutManager = OrientationManager.extend({
 		for (var i = 0; i < children.length; i++) {
 			// calculate flex unit (against flow)
 			if (axis != this.getOrientation(parent)) {
-//[TODO] should be margin-box dimension (safari)
-				contentSize = (new CSSBox(children[i])).getBoxDimension('border', axis);
+				contentSize = (new CSSBox(children[i])).getBoxDimension('margin', axis);
 				divisor = this.layoutData.get(children[i], 'count-' + axis);
 				oldFlexUnit = this.layoutData.get(children[i], 'unit-' + axis);
 				// content box dimensions may be larger than flex unit; subtract from content size

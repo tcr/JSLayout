@@ -131,8 +131,7 @@ var OrientationManager = base2.Base.extend({
 		} else {
 			for (var size = 0, child = element.firstChild; child; child = child.nextSibling)
 				if (child.nodeType == 1)
-//[TODO] should be margin-box dimension (safari)
-					size += (new CSSBox(child)).getBoxDimension('border', axis);
+					size += (new CSSBox(child)).getBoxDimension('margin', axis);
 			return size;
 		}
 	}
