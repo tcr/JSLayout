@@ -4,14 +4,11 @@
   <head>
     <title>Flow Tester</title>
     
-    <script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
-    <script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
+    <script src="base2/base2.js"></script>
+    <script src="base2/base2-dom.js"></script>
     <script src="layout/orientation.js"></script>
     
-    <!--[if IE]>
-      <sccript type='text/javascript' 
-        src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
-           <[endif]-->
+<!-- <script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script> -->
     
 <style>
 
@@ -93,11 +90,12 @@ color: #444;
 // main script
 new function () {
 	eval(base2.namespace);
+	eval(base2.Orientation.namespace);
 
 	// loader
 	DOM.bind(document);
 	document.addEventListener('DOMContentLoaded', function () {
-		var manager = new OrientationManager();
+		var manager = new OrientationManager(document);
 		manager.setOrientation(document.querySelector('#labs'), 'horizontal');
 //		manager.setOrientation(document.querySelector('#labs'), 'vertical');
 	}, false);

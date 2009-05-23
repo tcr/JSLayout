@@ -35,43 +35,35 @@ overflow: auto;
 }
 </style>
 
-<script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
-<script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
-<script src="layout/orientation.js"></script>
-<link href="layout/orientation.css" rel="stylesheet">
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+<script src="base2/base2.js"></script>
 <script src="layout/layout.js"></script>
 
 <script>
 // main script
 new function () {
 	eval(base2.namespace);
+	eval(base2.lang.namespace);
 	eval(base2.Layout.namespace);
 
 	// loader
-	DOM.bind(document);
 	document.addEventListener('DOMContentLoaded', function () {
-/*		layout.setOrientation(document.querySelector('#container'), 'horizontal');
-		document.querySelectorAll('#container, #panel, #splitter, #content').forEach(function (element) {
+		// node references
+		var container = document.getElementById('container');
+		var splitter = document.getElementById('splitter');
+		var panel = document.getElementById('panel');
+		var content = document.getElementById('content');
+		
+		// layout
+		layout = new FullLayoutManager(document);
+		layout.setOrientation(container, 'horizontal');
+		forEach([container, panel, splitter, content], function (element) {
 			layout.setFlexibleProperty(element, 'height');
 		});
-		document.querySelectorAll('#container, #content').forEach(function (element) {
+		forEach([container, content], function (element) {
 			layout.setFlexibleProperty(element, 'width');
-		});*/
-
-		// add layout
-		var layout = new FullLayoutManager(document);		
-		layout.applyBySelector({
-			'#container': {orientation: 'horizontal', width: 1, height: 1},
-			'#panel, #splitter, #content': {height: 1},
-			'#content': {width: 1}
 		});
 		layout.calculate();
-		
-		// object references
-		var container = document.querySelector('#container');
-		var splitter = document.querySelector('#splitter');
-		var panel = document.querySelector('#panel');
-		var content = document.querySelector('#content');
 		
 		// get splitter padding
 		var rect = panel.getBoundingClientRect(), computed = document.defaultView.getComputedStyle(panel, null);

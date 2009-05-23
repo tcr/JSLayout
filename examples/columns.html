@@ -10,33 +10,35 @@ padding: 0;
 }
 </style>
 
-<script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
-<script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
-<script src="layout/orientation.js"></script>
+<ccript type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+<script src="base2/base2.js"></script>
 <script src="layout/layout.js"></script>
+<script src="sizzle/sizzle.js"></script>
 
 <script>
 
 // main script
 new function () {
 	eval(base2.namespace);
+	eval(base2.lang.namespace);
 	eval(base2.Layout.namespace);
 
 	// loader
-	DOM.bind(document);
-	document.addEventListener('DOMContentLoaded', function () {
+	window.onload = function () {
+//	document.addEventListener('DOMContentLoaded', function () {
 		var layout = new FullLayoutManager(document);
-		document.querySelectorAll('.grid').forEach(function (element) {
+		forEach(Sizzle('.grid', document), function (element) {
 			layout.setFlexibleProperty(element, 'height');
 			layout.setFlexibleProperty(element, 'width');
 			layout.setOrientation(element, 'horizontal');
 		});
-		document.querySelectorAll('.column').forEach(function (element) {
+		forEach(Sizzle('.column', document), function (element) {
 			layout.setFlexibleProperty(element, 'height');
 			layout.setFlexibleProperty(element, 'width');
 		});
 		layout.calculate();
-	}, false);
+//	}, false);
+	}
 };
 
 </script>
