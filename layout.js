@@ -16,33 +16,10 @@ new function(_) {
 //----------------------------------------------------------------------
 // DOM utilities
 //----------------------------------------------------------------------
- 
+
+// DOMUtils vs. CSSUtils vs. Utils?
 var DOMUtils = {
-	swapStyles: function (element, tempStyles, callback) {
-//[TODO] runtimeStyle?
-		var curStyles = {};
-		forEach(tempStyles, function (value, prop) {
-			curStyles[prop] = element.style[prop];
-		});
-		DOMUtils.setStyles(element, tempStyles);
-		var ret = callback(element);
-		DOMUtils.setStyles(element, curStyles);
-		return ret;
-	},
-	//[TODO] support non-camel-case, maybe
-	setStyles: function (element, styles) {
-		forEach(styles, function (value, prop) {
-			element.style[prop] = value;
-		});
-	},
-	addStyles: function (document, css) {
-		var head = document.getElementsByTagName('head')[0] ||
-		    document.documentElement.appendChild(document.createElement('head'));
-		var style = head.appendChild(document.createElement('style'));
-		document.styleSheets[0].cssText ?
-		    document.styleSheets[document.styleSheets.length - 1].cssText = css :
-		    style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = css;
-	},
+	// node manipulation
 	getOwnerDocument: function (node) {
 		return node.ownerDocument || node.document;
 	},
@@ -56,6 +33,42 @@ var DOMUtils = {
 			continue;
 		return !!descendant;
 	},
+	
+	// style object manipulation
+	_toCamelCase: function (property) {
+		return property.replace(/\-([a-z])/g, function (string, letter) { return letter.toUpperCase(); });
+	},
+	setStyleProperty: function (style, prop, val) {
+		style.setProperty ? style.setProperty(prop, val, null) : style[DOMUtils._toCamelCase(prop)] = val;
+	},
+	
+	// style manipulation functions
+	//[TODO] support non-camel-case, maybe
+	swapStyles: function (element, tempStyles, callback) {
+		var curStyles = {};
+		forEach(tempStyles, function (value, prop) {
+			curStyles[prop] = element.style[prop];
+		});
+		DOMUtils.setStyles(element, tempStyles);
+		var ret = callback(element);
+		DOMUtils.setStyles(element, curStyles);
+		return ret;
+	},
+	setStyles: function (element, styles) {
+		forEach(styles, function (value, prop) {
+			element.style[prop] = value;
+		});
+	},
+	addStylesheet: function (document, css) {
+		var head = document.getElementsByTagName('head')[0] ||
+		    document.documentElement.appendChild(document.createElement('head'));
+		var style = head.appendChild(document.createElement('style'));
+		document.styleSheets[0].cssText ?
+		    document.styleSheets[document.styleSheets.length - 1].cssText = css :
+		    style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = css;
+	},
+
+	// class attribute manipulation
 	addClass: function (element, className) {
 		DOMUtils.removeClass(element, className);
 		element.className += ' ' + className;
@@ -109,11 +122,10 @@ CSSBox.prototype = {
 			var computedStyle = this.view.getComputedStyle(this.element, null);
 			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
 			if (/KTML|Webkit/i.test(navigator.userAgent) && property == 'margin-right' &&
-			    computedStyle.getPropertyValue('float') == 'none') {
+			    computedStyle.getPropertyValue('float') == 'none')
 				return Math.max(parseFloat(DOMUtils.swapStyles(this.element, {marginLeft: 'auto'}, bind(function () {
 					return this.view.getComputedStyle(this.element, null).getPropertyValue(property);
 				}, this))), 0);
-			}
 			// return computed style value
 			return parseFloat(computedStyle.getPropertyValue(property));
 		}
@@ -143,26 +155,22 @@ CSSBox.prototype = {
 		throw new Error('Cannot get computed element style.');
 	},
 	setCSSLength: function (property, length) {
-		this.element.style[this._toCamelCase(property)] = length + 'px';
+		DOMUtils.setStyleProperty(this.element.style, this._normalizeProperty(property), length + 'px')
 	},
 	resetCSSLength: function (property) {
-//[TODO] is this function needed/correct?
-		this.setLength(property, '');
+		DOMUtils.removeStyleProperty(this.element.style, this._normalizeProperty(property))
 	},
 	_normalizeProperty: function (property) {
 		return property.replace(/^(border-[a-z]+)$/, '$1-width');
 	},
-	_toCamelCase: function (property) {
-		return property.replace(/\-([a-z])/g, function (string, letter) { return letter.toUpperCase(); });
-	},
 	isContentBoxDimensionAuto: function (axis) {
 		// auto will not expand offset dimension with padding
-		var temp = this.element.style['padding' + {horizontal: 'Left', vertical: 'Top'}[axis]];
-		this.element.style['padding' + {horizontal: 'Left', vertical: 'Top'}[axis]] = 0;
+		var temp = DOMUtils.getStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis]);
+		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '0px');
 		var dimension = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]];
-		this.element.style['padding' + {horizontal: 'Left', vertical: 'Top'}[axis]] = '1px';
+		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '1px');
 		var flag = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]] == dimension;
-		this.element.style['padding' + {horizontal: 'Left', vertical: 'Top'}[axis]] = temp;
+		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
 		return flag;
 	}
 };
@@ -229,7 +237,7 @@ var OrientationManager = base2.Base.extend({
 		this.body = document.getElementsByTagName('body')[0];
 		
 		// add orientation styles
-		DOMUtils.addStyles(document, [
+		DOMUtils.addStylesheet(document, [
 			'.orientation-horizontal { overflow: hidden; width: 0; }',
 			'.orientation-horizontal-child { float: left; width: 0; }',
 		    ].join('\n'));

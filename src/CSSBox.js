@@ -77,26 +77,22 @@ CSSBox.prototype = {
 		throw new Error('Cannot get computed element style.');
 	},
 	setCSSLength: function (property, length) {
-		this.element.style[this._toCamelCase(property)] = length + 'px';
+		DOMUtils.setStyleProperty(this.element.style, this._normalizeProperty(property), length + 'px')
 	},
 	resetCSSLength: function (property) {
-//[TODO] is this function needed/correct?
-		this.setLength(property, '');
+		DOMUtils.removeStyleProperty(this.element.style, this._normalizeProperty(property))
 	},
 	_normalizeProperty: function (property) {
 		return property.replace(/^(border-[a-z]+)$/, '$1-width');
 	},
-	_toCamelCase: function (property) {
-		return property.replace(/\-([a-z])/g, function (string, letter) { return letter.toUpperCase(); });
-	},
 	isContentBoxDimensionAuto: function (axis) {
 		// auto will not expand offset dimension with padding
-		var temp = this.element.style['padding' + {horizontal: 'Left', vertical: 'Top'}[axis]];
-		this.element.style['padding' + {horizontal: 'Left', vertical: 'Top'}[axis]] = 0;
+		var temp = DOMUtils.getStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis]);
+		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '0px');
 		var dimension = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]];
-		this.element.style['padding' + {horizontal: 'Left', vertical: 'Top'}[axis]] = '1px';
+		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '1px');
 		var flag = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]] == dimension;
-		this.element.style['padding' + {horizontal: 'Left', vertical: 'Top'}[axis]] = temp;
+		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
 		return flag;
 	}
 };

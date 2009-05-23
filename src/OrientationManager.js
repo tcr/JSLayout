@@ -14,7 +14,7 @@ var OrientationManager = base2.Base.extend({
 		this.body = document.getElementsByTagName('body')[0];
 		
 		// add orientation styles
-		DOMUtils.addStyles(document, [
+		DOMUtils.addStylesheet(document, [
 			'.orientation-horizontal { overflow: hidden; width: 0; }',
 			'.orientation-horizontal-child { float: left; width: 0; }',
 		    ].join('\n'));
