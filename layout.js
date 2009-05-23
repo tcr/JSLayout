@@ -268,7 +268,7 @@ var OrientationManager = base2.Base.extend({
 					
 				// shrink-wrap width: auto elements to minimum content width
 				if ((new CSSBox(child)).isContentBoxDimensionAuto(axis))
-					(new CSSBox(child)).setCSSLength('width', this.getMinContentWidth(element));
+					(new CSSBox(child)).setCSSLength('width', this.getMinContentWidth(child));
 				// add class
 				DOMUtils.addClass(child, 'orientation-horizontal-child');
 			}
@@ -336,7 +336,8 @@ var OrientationManager = base2.Base.extend({
 		} else {
 			for (var size = 0, child = element.firstChild; child; child = child.nextSibling)
 				if (child.nodeType == 1)
-					size += (new CSSBox(child)).getBoxDimension('margin', axis);
+//[TODO] should be margin-box dimension (safari)
+					size += (new CSSBox(child)).getBoxDimension('border', axis);
 			return size;
 		}
 	}
@@ -586,17 +587,16 @@ var LayoutManager = OrientationManager.extend({
 		for (var i = 0; i < children.length; i++) {
 			// calculate flex unit (against flow)
 			if (axis != this.getOrientation(parent)) {
-				contentSize = (new CSSBox(children[i])).getBoxDimension('margin', axis);
+//[TODO] should be margin-box dimension (safari)
+				contentSize = (new CSSBox(children[i])).getBoxDimension('border', axis);
 				divisor = this.layoutData.get(children[i], 'count-' + axis);
 				oldFlexUnit = this.layoutData.get(children[i], 'unit-' + axis);
-				
 				// content box dimensions may be larger than flex unit; subtract from content size
 				if ({horizontal: 'width', vertical: 'height'}[axis] in this.layoutData.get(children[i], 'properties-' + axis))
 					contentSize -= (new CSSBox(children[i])).getBoxDimension('content', axis) - oldFlexUnit;
 			}
 			
 			// set flexible properties
-//console.log('Content box size:', contentBoxSize, 'Content size:', contentSize, 'Divisor:', divisor, 'OldFlexUnit:', oldFlexUnit);
 			var newFlexUnit = Math.max((contentBoxSize - (contentSize - (divisor * oldFlexUnit))) / divisor, 0);
 			this.updateFlexibleProperties(children[i], axis, newFlexUnit);
 			

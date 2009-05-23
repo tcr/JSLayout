@@ -176,17 +176,16 @@ var LayoutManager = OrientationManager.extend({
 		for (var i = 0; i < children.length; i++) {
 			// calculate flex unit (against flow)
 			if (axis != this.getOrientation(parent)) {
-				contentSize = (new CSSBox(children[i])).getBoxDimension('margin', axis);
+//[TODO] should be margin-box dimension (safari)
+				contentSize = (new CSSBox(children[i])).getBoxDimension('border', axis);
 				divisor = this.layoutData.get(children[i], 'count-' + axis);
 				oldFlexUnit = this.layoutData.get(children[i], 'unit-' + axis);
-				
 				// content box dimensions may be larger than flex unit; subtract from content size
 				if ({horizontal: 'width', vertical: 'height'}[axis] in this.layoutData.get(children[i], 'properties-' + axis))
 					contentSize -= (new CSSBox(children[i])).getBoxDimension('content', axis) - oldFlexUnit;
 			}
 			
 			// set flexible properties
-//console.log('Content box size:', contentBoxSize, 'Content size:', contentSize, 'Divisor:', divisor, 'OldFlexUnit:', oldFlexUnit);
 			var newFlexUnit = Math.max((contentBoxSize - (contentSize - (divisor * oldFlexUnit))) / divisor, 0);
 			this.updateFlexibleProperties(children[i], axis, newFlexUnit);
 			

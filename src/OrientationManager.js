@@ -63,7 +63,7 @@ var OrientationManager = base2.Base.extend({
 					
 				// shrink-wrap width: auto elements to minimum content width
 				if ((new CSSBox(child)).isContentBoxDimensionAuto(axis))
-					(new CSSBox(child)).setCSSLength('width', this.getMinContentWidth(element));
+					(new CSSBox(child)).setCSSLength('width', this.getMinContentWidth(child));
 				// add class
 				DOMUtils.addClass(child, 'orientation-horizontal-child');
 			}
@@ -131,7 +131,8 @@ var OrientationManager = base2.Base.extend({
 		} else {
 			for (var size = 0, child = element.firstChild; child; child = child.nextSibling)
 				if (child.nodeType == 1)
-					size += (new CSSBox(child)).getBoxDimension('margin', axis);
+//[TODO] should be margin-box dimension (safari)
+					size += (new CSSBox(child)).getBoxDimension('border', axis);
 			return size;
 		}
 	}
