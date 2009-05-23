@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Layout Manager</title>
+<style>
+.row {
+margin: 0;
+padding: 0;
+}
+</style>
+
+<script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
+<script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
+<script src="layout/orientation.js"></script>
+<link href="layout/orientation.css" rel="stylesheet">
+<script src="layout/layout.js"></script>
+
+<script>
+
+// main script
+new function () {
+	eval(base2.namespace);
+
+	// loader
+	DOM.bind(document);
+	document.addEventListener('DOMContentLoaded', function () {
+		var layout = new LayoutManager({recalcOnResize: true, expandBody: true});
+		document.querySelectorAll('.row').forEach(function (element) {
+			layout.setFlexibleProperty(element, 'height');
+		});
+		
+		layout.recalcLayout();
+	}, false);
+};
+
+</script>
+</head>
+
+<body id="container">
+<div class="row" style="background: red">This is a row. This is a row. This is a row.</div>
+<div class="row" style="background: blue">This is a row. This is a row. This is a row.</div>
+<div class="row" style="background: green">This is a row. This is a row. This is a row.</div>
+</body>
+</html>

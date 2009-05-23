@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <title>Flow Tester</title>
+    
+    <script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
+    <script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
+    <script src="layout/orientation.js"></script>
+    
+    <!--[if IE]>
+      <sccript type='text/javascript' 
+        src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+           <[endif]-->
+    
+<style>
+
+h1 {
+margin: 0;
+padding: 0.25em 0.5em;
+color: #ddd;
+font-family: "Tahoma", sans-serif;
+background: #555;
+border-bottom: 1px solid #888;
+width: 100%;
+position: fixed;
+top: 0;
+left: 0;
+font-size: 1.8em;
+}
+
+h1 a {
+text-decoration: none;
+color: #ddd;
+}
+
+h1 a:hover {
+color: white;
+text-decoration: underline;
+}
+
+html, body {
+margin: 0;
+padding: 0;
+}
+
+body {
+background: black;
+font-size: 76%;
+font-family: Georgia;
+margin-top: 3.5em;
+padding: 1px;
+}
+
+#labs {
+font-size: 1.2em;
+}
+
+#labs, #labs li {
+padding: 0;
+margin: 0;
+list-style: none;
+display: block;
+}
+
+#labs li {
+margin: 1em 0.75em;
+padding: 0.5em 1.5em;
+border: 2px solid #444;
+width: 275px;
+}
+
+.summary {
+font-weight: bold;
+}
+
+.summary:first-line {
+font-variant: small-caps;
+font-size: 1.2em;
+}
+
+.information {
+font-size: 0.8em;
+border-top: 1px solid #666;
+padding-top: 0.5em;
+color: #444;
+}
+
+</style>
+
+    <script>
+
+// main script
+new function () {
+	eval(base2.namespace);
+
+	// loader
+	DOM.bind(document);
+	document.addEventListener('DOMContentLoaded', function () {
+		var manager = new OrientationManager();
+		manager.setOrientation(document.querySelector('#labs'), 'horizontal');
+//		manager.setOrientation(document.querySelector('#labs'), 'vertical');
+	}, false);
+};
+    
+    </script>
+  </head>
+  <body>
+<h1><a href="/">tim-ryan.com</a>/labs</h1>
+<ul id="labs">
+<li style="background: #4ff">
+
+<h2><a href="include-js/">#include for JavaScript</a></h2>
+<p class="summary">Extending the capabilities of the <code>&lt;script&gt;</code> tag.</p>
+<p>Inspired by a <a href="http://ejohn.org/blog/degrading-script-tags/">post about degrading script tags</a>, I decided to add an <code>#include</code> directive to JavaScript, in the style of traditional C preprocessors.</p>
+<p>While it may be absurd, it still beats writing out all those <code>&lt;script src="..." /&gt;</code> tags...</p>
+
+<p class="information">Originally posted on <em class="date">August 29, 2008</em>.</p>
+</li>
+
+<li style="background: #4f4">
+<h2><a href="inifile/">INIFile.php</a></h2>
+<p class="summary">A small (4kb) PHP class for reading/writing INI files.</p>
+<p>INIFile goes beyond the default <code>parse_ini_file</code> functionality, allowing your application to read as well as write configuration files.</p>
+<p>This is, of course, a light-weight alternative for configuration than more code-heavy solutions, such as XML. (Not to say XML is bad for configuration&mdash;but PHP is not Java!)
+
+<p class="information">Originally posted on <em class="date">July 2, 2008</em>.</p>
+</li>
+
+<li style="background: #77f">
+<h2><a href="webtvimageviewer/">WebTV Image Viewer</a></h2>
+<p class="summary">A script for viewing full-size images on a WebTV or MSNTV box.</p>
+<p>I've always adored the <a href="http://davmagic.com/PAGES20.html">WebTV</a> for it's ancient techonology and exotic way of interacting with the web. Imagine the enticement of the challenge I faced when I found that it genuinely had no way of scrolling horizontally, only vertically. Thrilling!</p>
+<p>In an exercise of masochism and <a href="http://community-2.webtv.net/willxwill/webtv_viewer_info/">ancient proprietary code references</a>, I developed a way to intuitively view images which extended beyond the viewport borders, using the arrow keys.</p>
+
+<p>And no, I don't know why I ever spent so much time on this either. View the source if you want a good laugh. Or cry. (Or even <a href="http://browsers.evolt.org/?webtv/">take it for a spin</a>!)</p>
+<p class="information">Originally posted on <em class="date">July 31, 2006</em>.</p>
+</li>
+
+<li style="background: #f55">
+<h2><a href="bloopjs/">BloopJS</a></h2>
+<p class="summary">A JavaScript interpreter for the <a href="http://en.wikipedia.org/wiki/BlooP_and_FlooP">BlooP and FlooP</a> programming languages.</p>
+
+<p>My love for <a href="http://en.wikipedia.org/wiki/Esoteric_programming_language">esoteric programming languages</a> met my fancy for the name <a href="http://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Smiley.svg/600px-Smiley.svg.png">"bloope"</a> when I decided to port an interpreter for this strange lanugage from Perl to JavaScript.</p>
+<p>Regardless if you've heard of BlooP or not, I would definitely recommend reading Douglas Hofstadter's <i><a href="http://en.wikipedia.org/wiki/G%C3%B6del%2C_Escher%2C_Bach">Gödel, Escher, Bach</a></i> for anyone with a mind and a curiosity as to how it got there.</p>
+<p>Credit goes to <a href="http://www.catb.org/~esr/retro/">John Cowan</a> for writing the original interpreter.</p>
+
+<p class="information">Originally posted on <em class="date">October 20, 2004</em>.</p>
+</li>
+</ul>
+
+  </body>
+</html>

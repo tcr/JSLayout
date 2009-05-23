@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Flexify</title>
+
+<script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
+<script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
+<script src="layout/orientation.js"></script>
+<link href="layout/orientation.css" rel="stylesheet">
+<script src="layout/layout.js"></script>
+
+<style>
+label {
+display: block;
+}
+
+input.button, button {
+font-size: 1em;
+font-family: inherit;
+padding: 1px 20px;
+margin: 0 3px;
+white-space: nowrap;
+}
+
+body {
+margin: 0;
+padding: 5px;
+background: #ece9d8;
+font-size: 0.7em;
+font-family: sans-serif;
+}
+
+fieldset {
+-moz-border-radius: 0.5em;
+}
+</style>
+
+<script>
+
+// main script
+new function () {
+	eval(base2.namespace);
+
+	// loader
+	DOM.bind(document);
+	document.addEventListener('DOMContentLoaded', function () {
+		var layout = new FullLayoutManager(document, 'scroll');
+		document.querySelectorAll('.horizontal').forEach(function (element) {
+			layout.setOrientation(element, 'horizontal');
+		});
+		document.querySelectorAll('#bottom, #apples, textarea, .c').forEach(function (element) {
+			layout.setFlexibleProperty(element, 'height');
+		});
+		document.querySelectorAll('input[type="text"], .c, textarea, .fullwidth').forEach(function (element) {
+			layout.setFlexibleProperty(element, 'width');
+		});
+		document.querySelectorAll('.centered').forEach(function (element) {
+			layout.setFlexibleProperty(element, 'margin-left');
+			layout.setFlexibleProperty(element, 'margin-right');
+		});
+		layout.recalculate();
+	}, false);
+};
+
+</script>
+
+</head>
+<body>
+
+<div class="horizontal fullwidth">
+<input type="button" class="button c" value="Flexify me captain!">
+<button class="button c">Flexify me captain!</button>
+
+<fieldset>
+<legend>Flexy, kinda</legend>
+
+<label>Here is a full-width text input:</label>
+<input type="text" class="text">
+<label>This textarea is too:</label>
+
+<textarea rows="5" cols="5"></textarea>
+
+</fieldset>
+</div>
+
+<!-- width: max-intrinsic, and IE hack -->
+<div class="horizontal centered">
+<input type="button" value="There are" class="button">
+<input type="button" value="equal margins" class="button">
+<input type="button" value="on either side!" class="button">
+</div>
+
+<fieldset id="bottom" style="clear: left">
+<legend>Flexy, kinda</legend>
+
+<label>Here is a full-width text input:</label>
+<input type="text" class="text">
+
+<label>This textarea should take up all available space:</label>
+<textarea rows="5" cols="10"></textarea>
+
+</fieldset>
+</body>
+</html>

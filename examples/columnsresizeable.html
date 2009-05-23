@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Layout Manager</title>
+<style>
+div {
+margin: 0;
+padding: 0;
+}
+
+#frame {
+width: 400px;
+height: 75px;
+border: 3px solid black;
+overflow: auto;
+}
+</style>
+
+<link type="text/css" href="resize/smoothness/jquery-ui-1.7.1.custom.css" rel="stylesheet" />	
+<script type="text/javascript" src="resize/jquery-1.3.2.min.js"></script>
+<script type="text/javascript" src="resize/jquery-ui-1.7.1.custom.min.js"></script>
+
+<script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
+<script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
+<script src="layout/orientation.js"></script>
+<link href="layout/orientation.css" rel="stylesheet">
+<script src="layout/layout.js"></script>
+
+<script>
+
+// main script
+new function () {
+	eval(base2.namespace);
+
+	// loader
+	DOM.bind(document);
+	document.addEventListener('DOMContentLoaded', function () {	
+		var layout = new LayoutManager();
+		document.querySelectorAll('.grid, .column').forEach(function (element) {
+			layout.setFlexibleProperty(element, 'height');
+		});
+		document.querySelectorAll('.grid, .column').forEach(function (element) {
+			layout.setFlexibleProperty(element, 'width');
+		});
+		layout.setOrientation(document.querySelector('.grid'), 'horizontal');
+		
+		layout.recalcLayout();
+		
+	//	$('#frame').resizable().bind('resize', function () {
+	//		layout.recalcLayout();
+	//	});
+
+		window.resizeFrame = function () {
+			var frame = document.querySelector('#frame');
+			frame.style.width = prompt('Width:', 400) + 'px';
+			frame.style.height = prompt('Height:', 300) + 'px';
+			confirm('Recalc');
+			layout.recalcLayout();
+		}
+	}, false);
+};
+
+</script>
+</head>
+
+<body>
+<button onclick="resizeFrame()">Set Frame Size</button>
+<div id="frame">
+<div class="grid">
+<div class="column" style="background: red">This is a cell. This is a cell. This is a cell. This is a cell. This is a cell. This is a cell. </div>
+<div class="column" style="background: blue">This is a cell. This is a cell. This is a cell. This is a cell. This is a cell. </div>
+<div class="column" style="background: green">This is a cell. This is a cell. This is a cell. This is a cell. This is a cell. This is a cell. </div>
+</div>
+</div>
+</body>
+</html>
