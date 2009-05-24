@@ -3,7 +3,7 @@ set "str1=copy "
 set str1=%str1% "_layout_open.js" +
 set str1=%str1% "DOMUtils.js" +
 set str1=%str1% "CSSBox.js" + 
-set str1=%str1% "NodeDataManager.js" +
+set str1=%str1% "NodeUserData.js" +
 set str1=%str1% "OrientationManager.js" +
 
 REM Layout Manager

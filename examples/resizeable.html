@@ -21,30 +21,30 @@ overflow: hidden;
 <script type="text/javascript" src="resize/jquery-1.3.2.min.js"></script>
 <script type="text/javascript" src="resize/jquery-ui-1.7.1.custom.min.js"></script>
 
-<script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
-<script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
-<script src="layout/orientation.js"></script>
-<link href="layout/orientation.css" rel="stylesheet">
-<script src="layout/layout.js"></script>
+<script src="base2/base2.js"></script>
+<script src="../layout.js"></script>
+<script src="sizzle/sizzle.js"></script>
 
 <script>
 
 // main script
 new function () {
 	eval(base2.namespace);
+	eval(base2.lang.namespace);
 	eval(base2.Layout.namespace);
 
 	// loader
-	DOM.bind(document);
-	document.addEventListener('DOMContentLoaded', function () {	
-		var layout = new LayoutManager(document.querySelector('#frame'));
-		document.querySelectorAll('.grid, .column').forEach(function (element) {
+	document.addEventListener('DOMContentLoaded', function () {
+		// node references
+		var frame = document.getElementById('frame');
+	
+		// initialize layout
+		var layout = new LayoutManager(frame);
+		forEach(Sizzle('.grid, .column', document), function (element) {
 			layout.setFlexibleProperty(element, 'height');
-		});
-		document.querySelectorAll('.grid, .column').forEach(function (element) {
 			layout.setFlexibleProperty(element, 'width');
 		});
-		layout.setOrientation(document.querySelector('.grid'), 'horizontal');
+		layout.setOrientation(Sizzle('.grid', document)[0], 'horizontal');
 		layout.calculate();
 		
 		$('#frame').resizable().bind('resize', function () {

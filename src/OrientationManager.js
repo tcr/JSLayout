@@ -4,8 +4,6 @@
 
 var OrientationManager = base2.Base.extend({
 	document: null,
-	
-	orientationData: new NodeDataManager('orientation'),
 	constructor: function (document) {
 		// save document reference
 		if (!document || document.nodeType != 9)
@@ -18,60 +16,57 @@ var OrientationManager = base2.Base.extend({
 			'.orientation-horizontal { overflow: hidden; width: 0; }',
 			'.orientation-horizontal-child { float: left; width: 0; }',
 		    ].join('\n'));
-		   
-		// create sizing anchor
-		this.getContentSizeAnchor = document.createElement('a');
-		DOMUtils.setStyles(this.getContentSizeAnchor, {display: 'block'});
 	},
 	
 	getOrientation: function (element) {
-		return (element && this.orientationData.get(element, 'orientation')) || 'vertical';
+		return (new OrientationBox(element)).getOrientation();
 	},
 	setOrientation: function (element, axis) {
 		/* NOTE: orientation on body is possible, but float containment only works if
 		   overflow is defined on the document element, not the body; disallow it for uniformity's sake */
 		
+		// initialize
+		var parent = new OrientationBox(element);
 		// validate element
-		if (!element || element.nodeType != 1)
-			throw new Error('Invalid DOM element supplied.');
 		if (!DOMUtils.contains(this.body, element))
 			throw new Error('Only descendants of the body element can have orientation.');
-		if (this.getOrientation(element) == axis)
+		if (parent.getOrientation() == axis)
 			return;
-			
-		// set data
-		this.orientationData.set(element, 'orientation', axis == 'vertical' ? axis : 'horizontal');
+		
+		// set orientation
+		axis = (axis == 'horizontal') ? axis : 'vertical';
+		parent.setOrientation(axis);
 
 		// flow requires some changes
 		if (axis == 'horizontal')
 		{
 			// wrap child text nodes
 			for (var child = element.firstChild; child; child = child.nextSibling) {
-				if (child.nodeType != 3)
-					continue;
-				var wrap = this.document.createElement('span');
-				DOMUtils.addClass(wrap, 'orientation-text');
-				child.parentNode.replaceChild(wrap, child);
-				wrap.appendChild(child);
-				child = wrap;
+				if (child.nodeType == 3) {
+					var wrap = this.document.createElement('span');
+					DOMUtils.addClass(wrap, 'orientation-text');
+					child.parentNode.replaceChild(wrap, child);
+					wrap.appendChild(child);
+					child = wrap;
+				}
 			}
 		
 			// shrink-wrap child elements
 			for (var child = element.firstChild; child; child = child.nextSibling) {
-				if (child.nodeType != 1)
-					continue;
-					
-				// shrink-wrap width: auto elements to minimum content width
-				if ((new CSSBox(child)).isContentBoxDimensionAuto(axis))
-					(new CSSBox(child)).setCSSLength('width', this.getMinContentWidth(child));
-				// add class
-				DOMUtils.addClass(child, 'orientation-horizontal-child');
+				if (child.nodeType == 1) {
+					// shrink-wrap width: auto elements to minimum content width
+					var childBox = new CSSBox(child);
+					if (childBox.isContentBoxDimensionAuto(axis))
+						childBox.setCSSLength('width', this.getMinContentWidth(child));
+					// add class
+					DOMUtils.addClass(child, 'orientation-horizontal-child');
+				}
 			}
 			
 			// add class
 			DOMUtils.addClass(element, 'orientation-horizontal');
 			// expand box size to contain floats without wrapping
-			(new CSSBox(element)).setCSSLength('width', this.getContentSize(element, 'horizontal'));
+			parent.box.setCSSLength('width', parent.getContentSize());
 		}
 		else
 		{
@@ -96,7 +91,7 @@ var OrientationManager = base2.Base.extend({
 			DOMUtils.removeClass(element, 'orientation-horizontal');
 			// remove style
 //[TODO]
-			(new CSSBox(element)).resetCSSLength('width');
+			parent.box.resetCSSLength('width');
 		}
 	},
 	
@@ -116,24 +111,52 @@ var OrientationManager = base2.Base.extend({
 				return (new CSSBox(element)).getBoxDimension('content', 'horizontal');
 			});
 		}
+	}
+});
+
+/*
+ * orientation boxes
+ */
+ 
+var LayoutBase = Abstract.extend({
+	document: null,
+	element: null,
+	box: null,
+	data: null,
+	constructor: function (element) {
+		if (!element || element.nodeType != 1)
+			throw new Error('Invalid DOM element supplied.');
+		this.element = element;
+		this.document = DOMUtils.getOwnerDocument(element);
+		this.box = new CSSBox(element);
+		this.data = new NodeUserData(element, 'layout');
+	}
+});
+ 
+var OrientationBox = LayoutBase.extend({
+	getOrientation: function () {
+		return this.data.has('orientation') ? this.data.get('orientation') : 'vertical';
+	},
+	setOrientation: function (axis) {
+		this.data.set('orientation', axis);
 	},
 	
 	// size of box content, depending on orientation
-	getContentSizeAnchor: null,
-	getContentSize: function (element, axis) {
-		if (axis == 'vertical') {
-			element.appendChild(this.getContentSizeAnchor);
-			var size = (new CSSBox(this.getContentSizeAnchor))._getRoughOffset().y;
-			element.insertBefore(this.getContentSizeAnchor, element.firstChild);
-			size -= (new CSSBox(this.getContentSizeAnchor))._getRoughOffset().y;
-			element.removeChild(this.getContentSizeAnchor);
+	getContentSize: function () {
+		if (this.getOrientation() == 'vertical') {
+			var anchor = this.document.createElement('span'), box = new CSSBox(anchor);
+			DOMUtils.setStyleProperty(anchor.style, 'block');
+			this.element.appendChild(anchor);
+			var size = box._getRoughOffset().y;
+			this.element.insertBefore(anchor, this.element.firstChild);
+			size -= box._getRoughOffset().y;
+			this.element.removeChild(anchor);
 			return size;
 		} else {
-			for (var size = 0, child = element.firstChild; child; child = child.nextSibling)
+			for (var size = 0, child = this.element.firstChild; child; child = child.nextSibling)
 				if (child.nodeType == 1)
-					size += (new CSSBox(child)).getBoxDimension('margin', axis);
+					size += (new CSSBox(child)).getBoxDimension('margin', 'horizontal');
 			return size;
 		}
 	}
 });
-

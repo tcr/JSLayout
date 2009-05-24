@@ -4,8 +4,6 @@
 
 var LayoutManager = OrientationManager.extend({
 	root: null,
-	layoutData: new NodeDataManager('layout'),
-
 	constructor: function (root) {
 		// save root
 		this.root = root;
@@ -24,48 +22,33 @@ var LayoutManager = OrientationManager.extend({
 	},
 
 	getFlexibleProperty: function (element, property) {
+		// initialize
+		var box = new LayoutBox(element);
+		
 		// normalize properties and get axis
-		property = this.normalizeProperty(property);
-		var axis = this.getPropertyAxis(property);
-		if (!axis || !this.layoutData.get(element, axis, false))
+		property = this._normalizeProperty(property);
+		var axis = this._getPropertyAxis(property);
+		if (!axis)
 			return;
-			
 		// return data
-		return this.layoutData.get(element, 'properties-' + axis)[property];
+		return box.getFlexibleProperty(axis, property);
 	},
 
 	setFlexibleProperty: function (element, property, flex) {
+		// initialize
+		var box = new LayoutBox(element);
 		// validate element
-		if (!element || (element.nodeType !== 1))
-			throw new Error('Invalid DOM element supplied.');
 		if (!DOMUtils.contains(this.root, element))
 			throw new Error('Flexible elements must be descendants of the root node.');
-
+			
 		// normalize properties and get axis
-		property = this.normalizeProperty(property);
-		var axis = this.getPropertyAxis(property);
+		property = this._normalizeProperty(property);
+		var axis = this._getPropertyAxis(property);
 		if (!axis)
 			return;
-
-		// add flexible marker
-		this.layoutData.set(element, axis, true);
+		flex = flex ? Math.max(parseInt(flex), 1) : 1
 		// set element property
-		if (!this.layoutData.has(element, 'properties-' + axis))
-			this.layoutData.set(element, 'properties-' + axis, {});
-		var flexProperties = this.layoutData.get(element, 'properties-' + axis);
-		flexProperties[property] = flex ? Math.max(parseInt(flex), 1) : 1;
-	
-		// recalculate element flex count
-		var count = 0;
-		for (var prop in flexProperties)
-			count += flexProperties[prop];
-		this.layoutData.set(element, 'count-' + axis, count);
-		// recalculate parent flex count
-		var count = 0, parent = element.parentNode;
-		for (var child = parent.firstChild; child; child = child.nextSibling)
-			if (this.layoutData.has(child, 'count-' + axis))
-				count += this.layoutData.get(element, 'count-' + axis);
-		this.layoutData.set(parent, 'parent-count-' + axis, count);
+		box.setFlexibleProperty(axis, property, flex);
 	},
 	
 	removeFlexibleProperty: function (element, property) {
@@ -74,21 +57,16 @@ var LayoutManager = OrientationManager.extend({
 	
 	// private
 	
-	normalizeProperty: function (property) {
+	_normalizeProperty: function (property) {
 		// rewrite border properties
 		return property.replace(/^(border-[a-z]+)$/, '$1-width');
 	},
 	
-	getPropertyAxis: function (property) {
-		// property lists
-		var flexPropertiesList = {
-			horizontal: /^(width|(padding|margin)-(left|right)|border-(left|right)-width|left|right)$/,
-			vertical: /^(height|(padding|margin)-(top|bottom)|border-(top|bottom)-width|top|bottom)$/
-		};
-		// get dimension axis
-		for (var axis in flexPropertiesList)
-			if (flexPropertiesList[axis].test(property))
-				return axis;
+	_getPropertyAxis: function (property) {
+		if (/^(width|(padding|margin)-(left|right)|border-(left|right)-width|left|right)$/.test(property))
+			return 'horizontal';
+		if (/^(height|(padding|margin)-(top|bottom)|border-(top|bottom)-width|top|bottom)$/.test(property))
+			return 'vertical';
 		return false;
 	},
 	
@@ -99,16 +77,11 @@ var LayoutManager = OrientationManager.extend({
 		// reset layout (in horizontal, vertical order)
 		for (var axis in {horizontal: true, vertical: true})
 			ElementTraversal.traverse(this.root, {
-				ascend: bind(function (parent) {
-					// get any flexible children
-					for (var children = [], child = parent.firstChild; child; child = child.nextSibling)
-						if (this.layoutData.get(child, axis))
-							children.push(child);
-					if (!children.length)
-						return;
-					
+				ascend: bind(function (parentNode) {
 					// reset/equalize nodes
-					this.resetLayout(axis, parent, children);
+					var parent = new LayoutContainer(parentNode, this);
+					if (parent.hasFlexibleChildren(axis))
+						parent.resetContainerLayout(axis);
 				}, this)
 			});
 		
@@ -121,80 +94,139 @@ var LayoutManager = OrientationManager.extend({
 		// recalculate layout (in horizontal, vertical order)
 		for (var axis in {horizontal: true, vertical: true})
 			ElementTraversal.traverse(this.root, {
-				descend: bind(function (parent) {
-					// get any flexible children
-					for (var children = [], child = parent.firstChild; child; child = child.nextSibling)
-						if (this.layoutData.get(child, axis))
-							children.push(child);
-					if (!children.length)
-						return;
-					
-					// reset/equalize nodes
-					this.expandLayout(axis, parent, children);
+				descend: bind(function (parentNode) {
+					// expand nodes
+					var parent = new LayoutContainer(parentNode, this);
+					if (parent.hasFlexibleChildren(axis))
+						parent.expandContainerLayout(axis);
 				}, this)
 			});
+	}
+});
+
+/*
+ * layout boxes
+ */
+
+var LayoutContainer = OrientationBox.extend({
+	children: null,
+	constructor: function () {
+		// construct layout box
+		this.base.apply(this, arguments);
+		
+		// find flexible children (assume this doesn't expire for the lifespan on the object)
+		this.children = {horizontal: [], vertical: []};
+		for (var child = this.element.firstChild, box; child; child = child.nextSibling)
+			for (var axis in this.children)
+				if (child.nodeType == 1 && (box = new LayoutBox(child)).isFlexibleAlongAxis(axis))
+					this.children[axis].push(box);
 	},
 	
-	updateFlexibleProperties: function (node, axis, unit) {
+	hasFlexibleChildren: function (axis) {
+		return this.children[axis].length > 0;
+	},
+	
+	updateDivisor: function (axis) {
 		// set flexible properties
-		var flexProperties = this.layoutData.get(node, 'properties-' + axis), box = new CSSBox(node);
-		for (var prop in flexProperties)
-			box.setCSSLength((prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * flexProperties[prop]);
+		var divisor = 0;
+		for (var children = this.children[axis], i = 0; i < children.length; i++)
+			divisor += children[i].data.get('divisor-' + axis);
+		this.data.set('container-divisor-' + axis, divisor);
 	},
-	
-	resetLayout: function (axis, parent, children) {
-		// reset properties
-		this.layoutData.set(parent, 'parent-unit-' + axis, 0);
-		for (var i = 0; i < children.length; i++) {
+
+	resetContainerLayout: function (axis) {
+		// reset parent flex unit
+		this.data.set('container-unit-' + axis, 0);
+		// reset children properties
+		for (var children = this.children[axis], i = 0; i < children.length; i++) {
 			// reset flexible properties
-			this.layoutData.set(children[i], 'unit-' + axis, 0);
-			var flexProperties = this.layoutData.get(children[i], 'properties-' + axis), box = new CSSBox(children[i]);
-			for (var prop in flexProperties)
-				box.setCSSLength((prop.match(/^(width|height)$/) ? 'min-' : '') + prop, 0);
+			children[i].data.set('unit-' + axis, 0);
+			children[i].updateFlexibleProperties(axis, 0);
 		}
 	},
 
-	expandLayout: function (axis, parent, children) {
+	expandContainerLayout: function (axis) {
 		// calculate available free space in parent
+		var AXIS_DIMENSION = {horizontal: 'width', vertical: 'height'};
 		var contentSize, contentBoxSize, divisor, oldFlexUnit, newFlexUnit;
 		// get content box size
-		contentBoxSize = (new CSSBox(parent)).getBoxDimension('content', axis);
+		contentBoxSize = this.box.getBoxDimension('content', axis);
 			
 		// calculate flex unit (with flow)
-		if (axis == this.getOrientation(parent)) {
-			contentSize = this.getContentSize(parent, axis);
-			divisor = this.layoutData.get(parent, 'parent-count-' + axis);
-			oldFlexUnit = this.layoutData.get(parent, 'parent-unit-' + axis);
+		if (axis == this.getOrientation()) {
+			contentSize = this.getContentSize();
+			divisor = this.data.get('container-divisor-' + axis);
+			oldFlexUnit = this.data.get('container-unit-' + axis);
 			
 			// content box dimensions may be larger than flex unit; subtract from content size
-			for (var i = 0; i < children.length; i++)
-				if ({horizontal: 'width', vertical: 'height'}[axis] in this.layoutData.get(children[i], 'properties-' + axis))
-					contentSize -= (new CSSBox(children[i])).getBoxDimension('content', axis) - oldFlexUnit;
+			for (var children = this.children[axis], i = 0; i < children.length; i++)
+				if (children[i].hasFlexibleProperty(axis, AXIS_DIMENSION[axis]))
+					contentSize -= children[i].box.getBoxDimension('content', axis) -
+					    (oldFlexUnit * children[i].getFlexibleProperty(axis, AXIS_DIMENSION[axis]));
 		}
 		
 		// iterate flexible children
-		for (var i = 0; i < children.length; i++) {
+		for (var children = this.children[axis], i = 0; i < children.length; i++) {
 			// calculate flex unit (against flow)
-			if (axis != this.getOrientation(parent)) {
-				contentSize = (new CSSBox(children[i])).getBoxDimension('margin', axis);
-				divisor = this.layoutData.get(children[i], 'count-' + axis);
-				oldFlexUnit = this.layoutData.get(children[i], 'unit-' + axis);
+			if (axis != this.getOrientation()) {
+				contentSize = children[i].box.getBoxDimension('margin', axis);
+				divisor = children[i].data.get('divisor-' + axis);
+				oldFlexUnit = children[i].data.get('unit-' + axis);
 				// content box dimensions may be larger than flex unit; subtract from content size
-				if ({horizontal: 'width', vertical: 'height'}[axis] in this.layoutData.get(children[i], 'properties-' + axis))
-					contentSize -= (new CSSBox(children[i])).getBoxDimension('content', axis) - oldFlexUnit;
+				if (children[i].hasFlexibleProperty(axis, AXIS_DIMENSION[axis]))
+					contentSize -= children[i].box.getBoxDimension('content', axis) -
+					    (oldFlexUnit * children[i].getFlexibleProperty(axis, AXIS_DIMENSION[axis]));
 			}
 			
 			// set flexible properties
 			var newFlexUnit = Math.max((contentBoxSize - (contentSize - (divisor * oldFlexUnit))) / divisor, 0);
-			this.updateFlexibleProperties(children[i], axis, newFlexUnit);
+			children[i].updateFlexibleProperties(axis, newFlexUnit);
 			
 			// cache flex unit (against flow)
-			if (axis != this.getOrientation(parent))
-				this.layoutData.set(children[i], 'unit-' + axis, newFlexUnit);
+			if (axis != this.getOrientation())
+				children[i].data.set('unit-' + axis, newFlexUnit);
 		}
 		
 		// cache flex unit (with flow)
-		if (axis == this.getOrientation(parent))
-			this.layoutData.set(parent, 'parent-unit-' + axis, newFlexUnit);
+		if (axis == this.getOrientation())
+			this.data.set('parent-unit-' + axis, newFlexUnit);
+	}
+});
+
+var LayoutBox = LayoutBase.extend({	
+	getFlexibleProperty: function (axis, property) {
+		return this.data.has('properties-' + axis) && this.data.get('properties-' + axis)[property];
+	},
+	
+	hasFlexibleProperty: function (axis, property) {
+		return this.data.has('properties-' + axis) && this.data.get('properties-' + axis).hasOwnProperty(property);
+	},
+	
+	setFlexibleProperty: function (axis, property, value) {
+		this.data.ensure('properties-' + axis, {});
+		this.data.get('properties-' + axis)[property] = value;
+		this.data.set('is-flexible-' + axis, true);
+		// reset flex count
+		this.updateDivisor(axis);
+		(new LayoutContainer(this.element.parentNode)).updateDivisor(axis);
+	},
+
+	updateDivisor: function (axis) {
+		// set flexible properties
+		var properties = this.data.get('properties-' + axis) || {}, divisor = 0;
+		for (var prop in properties)
+			divisor += properties[prop];
+		this.data.set('divisor-' + axis, divisor);
+	},
+	
+	isFlexibleAlongAxis: function (axis) {
+		return !!this.data.get('is-flexible-' + axis);
+	},
+	
+	updateFlexibleProperties: function (axis, unit) {
+		// set flexible properties
+		var properties = this.data.get('properties-' + axis) || {};
+		for (var prop in properties)
+			this.box.setCSSLength((prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop]);
 	}
 });

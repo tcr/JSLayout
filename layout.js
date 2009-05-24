@@ -182,31 +182,40 @@ CSSBox.prototype = {
 };
 
 //----------------------------------------------------------------------
-// node data manager
+// node user data manager
 //----------------------------------------------------------------------
 
-//[TODO] does this really require a prefix?
-var NodeDataManager = Base.extend({
+//[TODO] could prefixes be randomly generated? or eliminated...
+var NodeUserData = Base.extend({
+	node: null,
 	prefix: '',
-	constructor: function (prefix) {
-		this.prefix = prefix || '';
+	constructor: function (node, prefix) {
+		if (!node || !node.nodeType)
+			throw new Error('Invalid DOM node supplied.');
+		this.node = node;
+		this.prefix = prefix ? prefix + ':' : '';
 	},
-	get: function (node, key) {
-		return this._getUserData(node, this.prefix + ':' + key);
+	get: function (key) {
+		return NodeUserData.getUserData(this.node, this.prefix + key);
 	},
-	set: function (node, key, data) {
-		return this._setUserData(node, this.prefix + ':' + key, data, null);
+	set: function (key, data) {
+		return NodeUserData.setUserData(this.node, this.prefix + key, data, null);
 	},
-	has: function (node, key) {
-		return this.get(node, key) != null;
+	has: function (key) {
+		return this.get(key) != null;
 	},
-	remove: function (node, key) {
-		this.set(node, key, null);
+	remove: function (key) {
+		this.set(key, null);
 	},
-	'_getUserData': function (node, key) {
+	ensure: function (key, defaultValue) {
+		if (!this.has(key))
+			this.set(key, defaultValue);
+	}
+}, {
+	'getUserData': function (node, key) {
 		return node.getUserData(key);
 	},
-	'_setUserData': function (node, key, value, handler) {
+	'setUserData': function (node, key, value, handler) {
 		return node.setUserData(key, value, handler);
 	}
 });
@@ -215,26 +224,22 @@ if (!document.getUserData || !document.setUserData)
 {
 	// create our own data cache
 	var userData = {}, userDataID = 0;
-	NodeDataManager.implement({
-		_getUserData: function (node, key) {
-			if (typeof node['data-userDataKey'] == 'undefined')
-				node['data-userDataKey'] = ++userDataID;
-			return userData[node['data-userDataKey']] && userData[node['data-userDataKey']][key];
-		},
-		_setUserData: function (node, key, value, handler) {
-			var old = this._getUserData(node, key);
-			(userData[node['data-userDataKey']] || (userData[node['data-userDataKey']] = {}))[key] = value;
-			return old;
-		}
-	});
+	NodeUserData.getUserData = function (node, key) {
+		if (typeof node['data-userDataKey'] == 'undefined')
+			node['data-userDataKey'] = ++userDataID;
+		return userData[node['data-userDataKey']] && userData[node['data-userDataKey']][key];
+	};
+	NodeUserData.setUserData = function (node, key, value, handler) {
+		var old = NodeUserData.getUserData(node, key);
+		(userData[node['data-userDataKey']] || (userData[node['data-userDataKey']] = {}))[key] = value;
+		return old;
+	};
 }//----------------------------------------------------------------------
 // orientation manager
 //----------------------------------------------------------------------
 
 var OrientationManager = base2.Base.extend({
 	document: null,
-	
-	orientationData: new NodeDataManager('orientation'),
 	constructor: function (document) {
 		// save document reference
 		if (!document || document.nodeType != 9)
@@ -247,60 +252,57 @@ var OrientationManager = base2.Base.extend({
 			'.orientation-horizontal { overflow: hidden; width: 0; }',
 			'.orientation-horizontal-child { float: left; width: 0; }',
 		    ].join('\n'));
-		   
-		// create sizing anchor
-		this.getContentSizeAnchor = document.createElement('a');
-		DOMUtils.setStyles(this.getContentSizeAnchor, {display: 'block'});
 	},
 	
 	getOrientation: function (element) {
-		return (element && this.orientationData.get(element, 'orientation')) || 'vertical';
+		return (new OrientationBox(element)).getOrientation();
 	},
 	setOrientation: function (element, axis) {
 		/* NOTE: orientation on body is possible, but float containment only works if
 		   overflow is defined on the document element, not the body; disallow it for uniformity's sake */
 		
+		// initialize
+		var parent = new OrientationBox(element);
 		// validate element
-		if (!element || element.nodeType != 1)
-			throw new Error('Invalid DOM element supplied.');
 		if (!DOMUtils.contains(this.body, element))
 			throw new Error('Only descendants of the body element can have orientation.');
-		if (this.getOrientation(element) == axis)
+		if (parent.getOrientation() == axis)
 			return;
-			
-		// set data
-		this.orientationData.set(element, 'orientation', axis == 'vertical' ? axis : 'horizontal');
+		
+		// set orientation
+		axis = (axis == 'horizontal') ? axis : 'vertical';
+		parent.setOrientation(axis);
 
 		// flow requires some changes
 		if (axis == 'horizontal')
 		{
 			// wrap child text nodes
 			for (var child = element.firstChild; child; child = child.nextSibling) {
-				if (child.nodeType != 3)
-					continue;
-				var wrap = this.document.createElement('span');
-				DOMUtils.addClass(wrap, 'orientation-text');
-				child.parentNode.replaceChild(wrap, child);
-				wrap.appendChild(child);
-				child = wrap;
+				if (child.nodeType == 3) {
+					var wrap = this.document.createElement('span');
+					DOMUtils.addClass(wrap, 'orientation-text');
+					child.parentNode.replaceChild(wrap, child);
+					wrap.appendChild(child);
+					child = wrap;
+				}
 			}
 		
 			// shrink-wrap child elements
 			for (var child = element.firstChild; child; child = child.nextSibling) {
-				if (child.nodeType != 1)
-					continue;
-					
-				// shrink-wrap width: auto elements to minimum content width
-				if ((new CSSBox(child)).isContentBoxDimensionAuto(axis))
-					(new CSSBox(child)).setCSSLength('width', this.getMinContentWidth(child));
-				// add class
-				DOMUtils.addClass(child, 'orientation-horizontal-child');
+				if (child.nodeType == 1) {
+					// shrink-wrap width: auto elements to minimum content width
+					var childBox = new CSSBox(child);
+					if (childBox.isContentBoxDimensionAuto(axis))
+						childBox.setCSSLength('width', this.getMinContentWidth(child));
+					// add class
+					DOMUtils.addClass(child, 'orientation-horizontal-child');
+				}
 			}
 			
 			// add class
 			DOMUtils.addClass(element, 'orientation-horizontal');
 			// expand box size to contain floats without wrapping
-			(new CSSBox(element)).setCSSLength('width', this.getContentSize(element, 'horizontal'));
+			parent.box.setCSSLength('width', parent.getContentSize());
 		}
 		else
 		{
@@ -325,7 +327,7 @@ var OrientationManager = base2.Base.extend({
 			DOMUtils.removeClass(element, 'orientation-horizontal');
 			// remove style
 //[TODO]
-			(new CSSBox(element)).resetCSSLength('width');
+			parent.box.resetCSSLength('width');
 		}
 	},
 	
@@ -345,27 +347,55 @@ var OrientationManager = base2.Base.extend({
 				return (new CSSBox(element)).getBoxDimension('content', 'horizontal');
 			});
 		}
+	}
+});
+
+/*
+ * orientation boxes
+ */
+ 
+var LayoutBase = Abstract.extend({
+	document: null,
+	element: null,
+	box: null,
+	data: null,
+	constructor: function (element) {
+		if (!element || element.nodeType != 1)
+			throw new Error('Invalid DOM element supplied.');
+		this.element = element;
+		this.document = DOMUtils.getOwnerDocument(element);
+		this.box = new CSSBox(element);
+		this.data = new NodeUserData(element, 'layout');
+	}
+});
+ 
+var OrientationBox = LayoutBase.extend({
+	getOrientation: function () {
+		return this.data.has('orientation') ? this.data.get('orientation') : 'vertical';
+	},
+	setOrientation: function (axis) {
+		this.data.set('orientation', axis);
 	},
 	
 	// size of box content, depending on orientation
-	getContentSizeAnchor: null,
-	getContentSize: function (element, axis) {
-		if (axis == 'vertical') {
-			element.appendChild(this.getContentSizeAnchor);
-			var size = (new CSSBox(this.getContentSizeAnchor))._getRoughOffset().y;
-			element.insertBefore(this.getContentSizeAnchor, element.firstChild);
-			size -= (new CSSBox(this.getContentSizeAnchor))._getRoughOffset().y;
-			element.removeChild(this.getContentSizeAnchor);
+	getContentSize: function () {
+		if (this.getOrientation() == 'vertical') {
+			var anchor = this.document.createElement('span'), box = new CSSBox(anchor);
+			DOMUtils.setStyleProperty(anchor.style, 'block');
+			this.element.appendChild(anchor);
+			var size = box._getRoughOffset().y;
+			this.element.insertBefore(anchor, this.element.firstChild);
+			size -= box._getRoughOffset().y;
+			this.element.removeChild(anchor);
 			return size;
 		} else {
-			for (var size = 0, child = element.firstChild; child; child = child.nextSibling)
+			for (var size = 0, child = this.element.firstChild; child; child = child.nextSibling)
 				if (child.nodeType == 1)
-					size += (new CSSBox(child)).getBoxDimension('margin', axis);
+					size += (new CSSBox(child)).getBoxDimension('margin', 'horizontal');
 			return size;
 		}
 	}
 });
-
 //----------------------------------------------------------------------
 // resize observer
 //----------------------------------------------------------------------
@@ -438,8 +468,6 @@ var ElementTraversal = Module.extend({
 
 var LayoutManager = OrientationManager.extend({
 	root: null,
-	layoutData: new NodeDataManager('layout'),
-
 	constructor: function (root) {
 		// save root
 		this.root = root;
@@ -458,48 +486,33 @@ var LayoutManager = OrientationManager.extend({
 	},
 
 	getFlexibleProperty: function (element, property) {
+		// initialize
+		var box = new LayoutBox(element);
+		
 		// normalize properties and get axis
-		property = this.normalizeProperty(property);
-		var axis = this.getPropertyAxis(property);
-		if (!axis || !this.layoutData.get(element, axis, false))
+		property = this._normalizeProperty(property);
+		var axis = this._getPropertyAxis(property);
+		if (!axis)
 			return;
-			
 		// return data
-		return this.layoutData.get(element, 'properties-' + axis)[property];
+		return box.getFlexibleProperty(axis, property);
 	},
 
 	setFlexibleProperty: function (element, property, flex) {
+		// initialize
+		var box = new LayoutBox(element);
 		// validate element
-		if (!element || (element.nodeType !== 1))
-			throw new Error('Invalid DOM element supplied.');
 		if (!DOMUtils.contains(this.root, element))
 			throw new Error('Flexible elements must be descendants of the root node.');
-
+			
 		// normalize properties and get axis
-		property = this.normalizeProperty(property);
-		var axis = this.getPropertyAxis(property);
+		property = this._normalizeProperty(property);
+		var axis = this._getPropertyAxis(property);
 		if (!axis)
 			return;
-
-		// add flexible marker
-		this.layoutData.set(element, axis, true);
+		flex = flex ? Math.max(parseInt(flex), 1) : 1
 		// set element property
-		if (!this.layoutData.has(element, 'properties-' + axis))
-			this.layoutData.set(element, 'properties-' + axis, {});
-		var flexProperties = this.layoutData.get(element, 'properties-' + axis);
-		flexProperties[property] = flex ? Math.max(parseInt(flex), 1) : 1;
-	
-		// recalculate element flex count
-		var count = 0;
-		for (var prop in flexProperties)
-			count += flexProperties[prop];
-		this.layoutData.set(element, 'count-' + axis, count);
-		// recalculate parent flex count
-		var count = 0, parent = element.parentNode;
-		for (var child = parent.firstChild; child; child = child.nextSibling)
-			if (this.layoutData.has(child, 'count-' + axis))
-				count += this.layoutData.get(element, 'count-' + axis);
-		this.layoutData.set(parent, 'parent-count-' + axis, count);
+		box.setFlexibleProperty(axis, property, flex);
 	},
 	
 	removeFlexibleProperty: function (element, property) {
@@ -508,21 +521,16 @@ var LayoutManager = OrientationManager.extend({
 	
 	// private
 	
-	normalizeProperty: function (property) {
+	_normalizeProperty: function (property) {
 		// rewrite border properties
 		return property.replace(/^(border-[a-z]+)$/, '$1-width');
 	},
 	
-	getPropertyAxis: function (property) {
-		// property lists
-		var flexPropertiesList = {
-			horizontal: /^(width|(padding|margin)-(left|right)|border-(left|right)-width|left|right)$/,
-			vertical: /^(height|(padding|margin)-(top|bottom)|border-(top|bottom)-width|top|bottom)$/
-		};
-		// get dimension axis
-		for (var axis in flexPropertiesList)
-			if (flexPropertiesList[axis].test(property))
-				return axis;
+	_getPropertyAxis: function (property) {
+		if (/^(width|(padding|margin)-(left|right)|border-(left|right)-width|left|right)$/.test(property))
+			return 'horizontal';
+		if (/^(height|(padding|margin)-(top|bottom)|border-(top|bottom)-width|top|bottom)$/.test(property))
+			return 'vertical';
 		return false;
 	},
 	
@@ -533,16 +541,11 @@ var LayoutManager = OrientationManager.extend({
 		// reset layout (in horizontal, vertical order)
 		for (var axis in {horizontal: true, vertical: true})
 			ElementTraversal.traverse(this.root, {
-				ascend: bind(function (parent) {
-					// get any flexible children
-					for (var children = [], child = parent.firstChild; child; child = child.nextSibling)
-						if (this.layoutData.get(child, axis))
-							children.push(child);
-					if (!children.length)
-						return;
-					
+				ascend: bind(function (parentNode) {
 					// reset/equalize nodes
-					this.resetLayout(axis, parent, children);
+					var parent = new LayoutContainer(parentNode, this);
+					if (parent.hasFlexibleChildren(axis))
+						parent.resetContainerLayout(axis);
 				}, this)
 			});
 		
@@ -555,81 +558,140 @@ var LayoutManager = OrientationManager.extend({
 		// recalculate layout (in horizontal, vertical order)
 		for (var axis in {horizontal: true, vertical: true})
 			ElementTraversal.traverse(this.root, {
-				descend: bind(function (parent) {
-					// get any flexible children
-					for (var children = [], child = parent.firstChild; child; child = child.nextSibling)
-						if (this.layoutData.get(child, axis))
-							children.push(child);
-					if (!children.length)
-						return;
-					
-					// reset/equalize nodes
-					this.expandLayout(axis, parent, children);
+				descend: bind(function (parentNode) {
+					// expand nodes
+					var parent = new LayoutContainer(parentNode, this);
+					if (parent.hasFlexibleChildren(axis))
+						parent.expandContainerLayout(axis);
 				}, this)
 			});
+	}
+});
+
+/*
+ * layout boxes
+ */
+
+var LayoutContainer = OrientationBox.extend({
+	children: null,
+	constructor: function () {
+		// construct layout box
+		this.base.apply(this, arguments);
+		
+		// find flexible children (assume this doesn't expire for the lifespan on the object)
+		this.children = {horizontal: [], vertical: []};
+		for (var child = this.element.firstChild, box; child; child = child.nextSibling)
+			for (var axis in this.children)
+				if (child.nodeType == 1 && (box = new LayoutBox(child)).isFlexibleAlongAxis(axis))
+					this.children[axis].push(box);
 	},
 	
-	updateFlexibleProperties: function (node, axis, unit) {
+	hasFlexibleChildren: function (axis) {
+		return this.children[axis].length > 0;
+	},
+	
+	updateDivisor: function (axis) {
 		// set flexible properties
-		var flexProperties = this.layoutData.get(node, 'properties-' + axis), box = new CSSBox(node);
-		for (var prop in flexProperties)
-			box.setCSSLength((prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * flexProperties[prop]);
+		var divisor = 0;
+		for (var children = this.children[axis], i = 0; i < children.length; i++)
+			divisor += children[i].data.get('divisor-' + axis);
+		this.data.set('container-divisor-' + axis, divisor);
 	},
-	
-	resetLayout: function (axis, parent, children) {
-		// reset properties
-		this.layoutData.set(parent, 'parent-unit-' + axis, 0);
-		for (var i = 0; i < children.length; i++) {
+
+	resetContainerLayout: function (axis) {
+		// reset parent flex unit
+		this.data.set('container-unit-' + axis, 0);
+		// reset children properties
+		for (var children = this.children[axis], i = 0; i < children.length; i++) {
 			// reset flexible properties
-			this.layoutData.set(children[i], 'unit-' + axis, 0);
-			var flexProperties = this.layoutData.get(children[i], 'properties-' + axis), box = new CSSBox(children[i]);
-			for (var prop in flexProperties)
-				box.setCSSLength((prop.match(/^(width|height)$/) ? 'min-' : '') + prop, 0);
+			children[i].data.set('unit-' + axis, 0);
+			children[i].updateFlexibleProperties(axis, 0);
 		}
 	},
 
-	expandLayout: function (axis, parent, children) {
+	expandContainerLayout: function (axis) {
 		// calculate available free space in parent
+		var AXIS_DIMENSION = {horizontal: 'width', vertical: 'height'};
 		var contentSize, contentBoxSize, divisor, oldFlexUnit, newFlexUnit;
 		// get content box size
-		contentBoxSize = (new CSSBox(parent)).getBoxDimension('content', axis);
+		contentBoxSize = this.box.getBoxDimension('content', axis);
 			
 		// calculate flex unit (with flow)
-		if (axis == this.getOrientation(parent)) {
-			contentSize = this.getContentSize(parent, axis);
-			divisor = this.layoutData.get(parent, 'parent-count-' + axis);
-			oldFlexUnit = this.layoutData.get(parent, 'parent-unit-' + axis);
+		if (axis == this.getOrientation()) {
+			contentSize = this.getContentSize();
+			divisor = this.data.get('container-divisor-' + axis);
+			oldFlexUnit = this.data.get('container-unit-' + axis);
 			
 			// content box dimensions may be larger than flex unit; subtract from content size
-			for (var i = 0; i < children.length; i++)
-				if ({horizontal: 'width', vertical: 'height'}[axis] in this.layoutData.get(children[i], 'properties-' + axis))
-					contentSize -= (new CSSBox(children[i])).getBoxDimension('content', axis) - oldFlexUnit;
+			for (var children = this.children[axis], i = 0; i < children.length; i++)
+				if (children[i].hasFlexibleProperty(axis, AXIS_DIMENSION[axis]))
+					contentSize -= children[i].box.getBoxDimension('content', axis) -
+					    (oldFlexUnit * children[i].getFlexibleProperty(axis, AXIS_DIMENSION[axis]));
 		}
 		
 		// iterate flexible children
-		for (var i = 0; i < children.length; i++) {
+		for (var children = this.children[axis], i = 0; i < children.length; i++) {
 			// calculate flex unit (against flow)
-			if (axis != this.getOrientation(parent)) {
-				contentSize = (new CSSBox(children[i])).getBoxDimension('margin', axis);
-				divisor = this.layoutData.get(children[i], 'count-' + axis);
-				oldFlexUnit = this.layoutData.get(children[i], 'unit-' + axis);
+			if (axis != this.getOrientation()) {
+				contentSize = children[i].box.getBoxDimension('margin', axis);
+				divisor = children[i].data.get('divisor-' + axis);
+				oldFlexUnit = children[i].data.get('unit-' + axis);
 				// content box dimensions may be larger than flex unit; subtract from content size
-				if ({horizontal: 'width', vertical: 'height'}[axis] in this.layoutData.get(children[i], 'properties-' + axis))
-					contentSize -= (new CSSBox(children[i])).getBoxDimension('content', axis) - oldFlexUnit;
+				if (children[i].hasFlexibleProperty(axis, AXIS_DIMENSION[axis]))
+					contentSize -= children[i].box.getBoxDimension('content', axis) -
+					    (oldFlexUnit * children[i].getFlexibleProperty(axis, AXIS_DIMENSION[axis]));
 			}
 			
 			// set flexible properties
 			var newFlexUnit = Math.max((contentBoxSize - (contentSize - (divisor * oldFlexUnit))) / divisor, 0);
-			this.updateFlexibleProperties(children[i], axis, newFlexUnit);
+			children[i].updateFlexibleProperties(axis, newFlexUnit);
 			
 			// cache flex unit (against flow)
-			if (axis != this.getOrientation(parent))
-				this.layoutData.set(children[i], 'unit-' + axis, newFlexUnit);
+			if (axis != this.getOrientation())
+				children[i].data.set('unit-' + axis, newFlexUnit);
 		}
 		
 		// cache flex unit (with flow)
-		if (axis == this.getOrientation(parent))
-			this.layoutData.set(parent, 'parent-unit-' + axis, newFlexUnit);
+		if (axis == this.getOrientation())
+			this.data.set('parent-unit-' + axis, newFlexUnit);
+	}
+});
+
+var LayoutBox = LayoutBase.extend({	
+	getFlexibleProperty: function (axis, property) {
+		return this.data.has('properties-' + axis) && this.data.get('properties-' + axis)[property];
+	},
+	
+	hasFlexibleProperty: function (axis, property) {
+		return this.data.has('properties-' + axis) && this.data.get('properties-' + axis).hasOwnProperty(property);
+	},
+	
+	setFlexibleProperty: function (axis, property, value) {
+		this.data.ensure('properties-' + axis, {});
+		this.data.get('properties-' + axis)[property] = value;
+		this.data.set('is-flexible-' + axis, true);
+		// reset flex count
+		this.updateDivisor(axis);
+		(new LayoutContainer(this.element.parentNode)).updateDivisor(axis);
+	},
+
+	updateDivisor: function (axis) {
+		// set flexible properties
+		var properties = this.data.get('properties-' + axis) || {}, divisor = 0;
+		for (var prop in properties)
+			divisor += properties[prop];
+		this.data.set('divisor-' + axis, divisor);
+	},
+	
+	isFlexibleAlongAxis: function (axis) {
+		return !!this.data.get('is-flexible-' + axis);
+	},
+	
+	updateFlexibleProperties: function (axis, unit) {
+		// set flexible properties
+		var properties = this.data.get('properties-' + axis) || {};
+		for (var prop in properties)
+			this.box.setCSSLength((prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop]);
 	}
 });//----------------------------------------------------------------------
 // full-page layout manager
