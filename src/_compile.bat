@@ -1,17 +1,18 @@
 REM Orientation Manager
-set "str1=copy "
-set str1=%str1% "_layout_open.js" +
-set str1=%str1% "Base.js" +
-set str1=%str1% "DOMUtils.js" +
-set str1=%str1% "CSSBox.js" + 
-set str1=%str1% "NodeUserData.js" +
-set str1=%str1% "OrientationManager.js" +
+set orientation=
+set orientation=%orientation% "Base.js" +
+set orientation=%orientation% "DOMUtils.js" +
+set orientation=%orientation% "CSSBox.js" + 
+set orientation=%orientation% "NodeUserData.js" +
+set orientation=%orientation% "OrientationManager.js"
 
 REM Layout Manager
-set str1=%str1% "ResizeObserver.js" +
-set str1=%str1% "ElementTraversal.js" +
-set str1=%str1% "LayoutManager.js" +
-set str1=%str1% "FullLayoutManager.js" +
-set str1=%str1% "_layout_close.js"
-set str1=%str1% "..\layout.js"
-%str1%
+set layout=%orientation% +
+set layout=%layout% "ResizeObserver.js" +
+set layout=%layout% "ElementTraversal.js" +
+set layout=%layout% "LayoutManager.js" +
+set layout=%layout% "FullLayoutManager.js"
+
+REM exports
+copy "_orientation_open.js" + %orientation% + "_orientation_close.js" "..\orientation.js"
+copy "_layout_open.js" + %layout% + "_layout_close.js" "..\layout.js"
