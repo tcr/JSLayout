@@ -458,14 +458,14 @@ var OrientationBox = LayoutBase.extend({
 		if (this.getOrientation() == axis)
 			return;
 		this.data.set('orientation', axis);
-		
+
 		// wrap or unwrap child text nodes
 		axis == 'horizontal' ? this.containChildTextNodes() : this.restoreChildTextNodes();
 		// update child elements
 		for (var child = this.element.firstChild; child; child = child.nextSibling)
 			if (child.nodeType == 1)
 				(new OrientationBoxChild(child)).updateOrientation(axis);
-			
+
 		// classes, styles
 		if (axis == 'horizontal') {
 			// add class
@@ -525,21 +525,21 @@ var OrientationBox = LayoutBase.extend({
 var OrientationBoxChild = LayoutBase.extend({
 	updateOrientation: function (axis) {
 		if (axis == 'horizontal') {
-			// set class
-			DOMUtils.addClass(this.element, 'orientation-horizontal-child');
-		
 			// if box doesn't have fixed with, shrink horizontally
 			if (this.box.isContentBoxDimensionAuto(axis))
 				this.box.setCSSLength('width', this.getMinContentWidth());
 			this.data.set('horizontal-shrink', true);
+			
+			// set class
+			DOMUtils.addClass(this.element, 'orientation-horizontal-child');
 		} else {
-			// unset class
-			DOMUtils.removeClass(this.element, 'orientation-horizontal-child');
-	
 			// undo horizontal shrinkage
 			if (this.data.get('horizontal-shrink'))
 				this.box.resetCSSLength('width');
 			this.data.set('horizontal-shrink', false)
+			
+			// unset class
+			DOMUtils.removeClass(this.element, 'orientation-horizontal-child');
 		}
 	},
 
@@ -548,7 +548,7 @@ var OrientationBoxChild = LayoutBase.extend({
 	'getMinContentWidth': function () {
 		// min/max-content width for browser that support the CSS property
 		//[NOTE] in theory safari supports '(min-)intrinsic', but it's not equivalent
-		if (DOMUtils.isUserAgent(/Gecko/i)) {
+		if (DOMUtils.isUserAgent(/Gecko\//i)) {
 			return DOMUtils.swapStyles(this.element, {width: '-moz-min-content'}, bind(function () {
 				return this.box.getBoxDimension('content', 'horizontal');
 			}, this));

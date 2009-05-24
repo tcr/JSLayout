@@ -2,37 +2,32 @@
 // resize observer
 //----------------------------------------------------------------------
 
-// node resize polling function (can't trust window.resize cross-browser)
+// element resize polling function (can't trust window.resize cross-browser)
 
 var ResizeObserver = Base.extend({
-	constructor: function (node) {
-		this.node = node;
-		this.refresh();
-		
-		// add polling function
-		setTimeout(bind(this.poll, this), 25);
+	constructor: function (element, timeout) {
+		this.element = element;
+		this.timeout = timeout || 25;
+		// initial call (no listeners, just updating cache)
+		this.poll();
 	},
 	
-	node: null,
+	element: null,
+	timeout: 0,
 	width: 0,
 	height: 0,
-	getDimension: function (dimension) {
-		// clientWidth/Height will not include scrollbars
-		return this.node['client' + dimension];
-	},
-	refresh: function () {
-		this.width = this.getDimension('Width');
-		this.height = this.getDimension('Height');
-	},
 	poll: function () {
 		// compare window size
-		if (this.width != this.getDimension('Width') || this.height != this.getDimension('Height')) {
+		if (this.width != this.element.clientWidth || this.height != this.element.clientHeight) {
 			for (var i = 0; i < this.listeners.length; i++)
 				this.listeners[i](this);
 		}
+		
 		// update cache
-		this.refresh();
-		setTimeout(bind(this.poll, this), 25);
+		this.width = this.element.clientWidth;
+		this.height = this.element.clientHeight;
+		// add timeout
+		setTimeout(bind(this.poll, this), this.timeout);
 	},
 	listeners: [],
 	addListener: function (listener) {

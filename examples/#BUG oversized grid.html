@@ -22,12 +22,12 @@ padding: 0;
 
 onContent(function () {
 	var layout = new FullLayoutManager(document);
-	Sizzle('.row', document).forEach(function (element) {
+	Sizzle('.grid', document).forEach(function (element) {
 		layout.setFlexibleProperty(element, 'height');
 		layout.setFlexibleProperty(element, 'width');
 		layout.setOrientation(element, 'horizontal');
 	});
-	Sizzle('.cell', document).forEach(function (element) {
+	Sizzle('.column, .cell', document).forEach(function (element) {
 		layout.setFlexibleProperty(element, 'height');
 		layout.setFlexibleProperty(element, 'width');
 	});
@@ -38,20 +38,22 @@ onContent(function () {
 </head>
 
 <body id="container">
-<div class="row">
-<div class="cell" style="background: red">This is a cell. This is a cell. This is a cell.</div>
+<div class="grid">
+<div class="column">
+<div class="cell" style="background: red">This is a cell. This is a cell. This is a cell. It has much more content than the other oens and biiiiiiiiiiiiiiiiiig words so you can see how flexed properties only get shares of free space, not equalized.</div>
 <div class="cell" style="background: blue">This is a cell. This is a cell. This is a cell.</div>
 <div class="cell" style="background: green">This is a cell. This is a cell. This is a cell.</div>
 </div>
-<div class="row">
+<div class="column">
 <div class="cell" style="background: green">This is a cell. This is a cell. This is a cell.</div>
 <div class="cell" style="background: red">This is a cell. This is a cell. This is a cell.</div>
 <div class="cell" style="background: blue">This is a cell. This is a cell. This is a cell.</div>
 </div>
-<div class="row">
+<div class="column">
 <div class="cell" style="background: blue">This is a cell. This is a cell. This is a cell.</div>
 <div class="cell" style="background: green">This is a cell. This is a cell. This is a cell.</div>
 <div class="cell" style="background: red">This is a cell. This is a cell. This is a cell.</div>
+</div>
 </div>
 </body>
 </html>

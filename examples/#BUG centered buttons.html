@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Flexify</title>
+
+<style>
+
+button {
+font-size: 1em;
+font-family: inherit;
+padding: 1px 20px;
+margin: 0 3px;
+}
+
+span {
+white-spkace: nowrap;
+float: left;
+}
+
+body {
+margin: 0;
+padding: 5px;
+background: #ece9d8;
+font-size: 0.7em;
+font-family: sans-serif;
+}
+</style>
+
+<!--
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+-->
+
+<script src="../layout.js"></script>
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
+
+<script>
+
+onContent(function () {
+	// node references
+	var container = document.getElementById('container');
+	
+	// layout
+	var layout = new FullLayoutManager(document, 'scroll');
+	layout.setOrientation(container, 'horizontal');
+	layout.setFlexibleProperty(container, 'margin-left');
+	layout.setFlexibleProperty(container, 'margin-right');
+	layout.calculate();
+});
+
+</script>
+
+</head>
+
+<body>
+<div id="container">
+<button><span>Flexify me captain!</span></button>
+<button><span>Flexify me captain!</span></button>
+<button><span>Flexify me captain!</span></button>
+</div>
+</body>
+</html>

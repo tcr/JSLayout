@@ -28,28 +28,30 @@ font-family: sans-serif;
 }
 </style>
 
+<!--
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+-->
+
+<script src="../layout.js"></script>
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
+
 <script>
 
-// main script
-new function () {
-	eval(base2.namespace);
-
-	// loader
-	DOM.bind(document);
-	document.addEventListener('DOMContentLoaded', function () {
-		var layout = new FullLayoutManager(document, 'scroll');
-		document.querySelectorAll('#container').forEach(function (element) {
-			layout.setOrientation(element, 'horizontal');
-			layout.setFlexibleProperty(element, 'width');
-//			layout.setFlexibleProperty(element, 'height');
-		});
-		document.querySelectorAll('button').forEach(function (element) {
-			layout.setFlexibleProperty(element, 'width');
-//			layout.setFlexibleProperty(element, 'height');
-		});
-		layout.recalculate();
-	}, false);
-};
+onContent(function () {
+	// layout
+	var layout = new FullLayoutManager(document, 'scroll');
+	Sizzle('#container').forEach(function (element) {
+		layout.setOrientation(element, 'horizontal');
+		layout.setFlexibleProperty(element, 'width');
+		layout.setFlexibleProperty(element, 'height');
+	});
+	Sizzle('button').forEach(function (element) {
+		layout.setFlexibleProperty(element, 'width');
+		layout.setFlexibleProperty(element, 'height');
+	});
+	layout.calculate();
+});
 
 </script>
 
