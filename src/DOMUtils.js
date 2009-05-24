@@ -66,5 +66,8 @@ var DOMUtils = {
 	},
 	removeClass: function (element, className) {
 		element.className = (' ' + (element.className || '') + ' ').replace(' ' + className + ' ', ' ');
+	},
+	hasClass: function (element, className) {
+		return (' ' + (element.className || '') + ' ').indexOf(' ' + className + ' ') != -1;
 	}
 };

@@ -30,87 +30,8 @@ var OrientationManager = base2.Base.extend({
 		// validate element
 		if (!DOMUtils.contains(this.body, element))
 			throw new Error('Only descendants of the body element can have orientation.');
-		if (parent.getOrientation() == axis)
-			return;
-		
 		// set orientation
-		axis = (axis == 'horizontal') ? axis : 'vertical';
-		parent.setOrientation(axis);
-
-		// flow requires some changes
-		if (axis == 'horizontal')
-		{
-			// wrap child text nodes
-			for (var child = element.firstChild; child; child = child.nextSibling) {
-				if (child.nodeType == 3) {
-					var wrap = this.document.createElement('span');
-					DOMUtils.addClass(wrap, 'orientation-text');
-					child.parentNode.replaceChild(wrap, child);
-					wrap.appendChild(child);
-					child = wrap;
-				}
-			}
-		
-			// shrink-wrap child elements
-			for (var child = element.firstChild; child; child = child.nextSibling) {
-				if (child.nodeType == 1) {
-					// shrink-wrap width: auto elements to minimum content width
-					var childBox = new CSSBox(child);
-					if (childBox.isContentBoxDimensionAuto(axis))
-						childBox.setCSSLength('width', this.getMinContentWidth(child));
-					// add class
-					DOMUtils.addClass(child, 'orientation-horizontal-child');
-				}
-			}
-			
-			// add class
-			DOMUtils.addClass(element, 'orientation-horizontal');
-			// expand box size to contain floats without wrapping
-			parent.box.setCSSLength('width', parent.getContentSize());
-		}
-		else
-		{
-			// unwrap child text nodes
-			for (var child = element.firstChild; child; child = child.nextSibling) {
-				if (child.nodeType == 1 && child.className.indexOf('orientation-text') != -1)
-					child.parentNode.replaceChild(child.firstChild, child);
-			}
-			
-			// unshrink elements
-			for (var child = element.firstChild; child; child = child.nextSibling) {
-				if (child.nodeType != 1)
-					continue;
-				
-				// unshrink elements
-//[TODO]
-				// remove class
-				DOMUtils.removeClass(child, 'orientation-horizontal-child');
-			}
-			
-			// remove class
-			DOMUtils.removeClass(element, 'orientation-horizontal');
-			// remove style
-//[TODO]
-			parent.box.resetCSSLength('width');
-		}
-	},
-	
-	// get minimum content width, for initial horizontal sizing
-	'getMinContentWidth': function (element) {
-		//[FIX] Safari doesn't like dimensions of '0'
-		var box = new CSSBox(element);
-		return DOMUtils.swapStyles(element, {width: '1px', overflow: 'auto'}, function () {
-			return element.scrollWidth - box.getCSSLength('padding-left') - box.getCSSLength('padding-right');
-		});
-	},
-	// min/max-content width for browsers that support the CSS property
-	// in theory safari supports '(min-)intrinsic', but it's not equivalent
-	'@Gecko': {
-		'getMinContentWidth': function (element) {
-			return DOMUtils.swapStyles(element, {width: '-moz-min-content'}, function () {
-				return (new CSSBox(element)).getBoxDimension('content', 'horizontal');
-			});
-		}
+		parent.setOrientation(axis == 'horizontal' ? axis : 'vertical');
 	}
 });
 
@@ -138,9 +59,64 @@ var OrientationBox = LayoutBase.extend({
 		return this.data.has('orientation') ? this.data.get('orientation') : 'vertical';
 	},
 	setOrientation: function (axis) {
+		// set data (if axis has changed)
+		if (this.getOrientation() == axis)
+			return;
 		this.data.set('orientation', axis);
+		
+		// orientation requires some changes
+		if (axis == 'horizontal')
+		{
+			// wrap child text nodes
+			this.containChildTextNodes();
+			// update child elements
+			for (var child = this.element.firstChild; child; child = child.nextSibling)
+				if (child.nodeType == 1)
+					(new OrientationBoxChild(child)).updateOrientation(axis);
+			
+			// add class
+			DOMUtils.addClass(this.element, 'orientation-horizontal');
+			// expand box size to contain floats without wrapping
+			this.box.setCSSLength('width', this.getContentSize());
+		}
+		else
+		{
+			// unwrap child text nodes
+			this.restoreChildTextNodes();
+			// update child elements
+			for (var child = this.element.firstChild; child; child = child.nextSibling)
+				if (child.nodeType == 1)
+					(new OrientationBoxChild(child)).updateOrientation(axis);
+			
+			// remove class and styles
+			DOMUtils.removeClass(element, 'orientation-horizontal');
+			this.box.resetCSSLength('width');
+		}
 	},
 	
+	containChildTextNodes: function () {
+		// wrap child text nodes in span elements
+		for (var child = this.element.firstChild; child; child = child.nextSibling) {
+			if (child.nodeType == 3) {
+				var wrap = this.document.createElement('span');
+				DOMUtils.addClass(wrap, 'orientation-text');
+				child.parentNode.replaceChild(wrap, child);
+				wrap.appendChild(child);
+				child = wrap;
+			}
+		}		
+	},
+	restoreChildTextNodes: function () {
+		// undo child text node wrapping
+		for (var child = this.element.firstChild; child; child = child.nextSibling) {
+			if (child.nodeType == 1 && DOMUtils.hasClass(child, 'orientation-text')) {
+				child = child.firstChild;
+				child.parentNode.parentNode.replaceChild(child, child.parentNode);
+			}
+		}
+	},
+	
+//[TODO] other ways of doing this? particularly horizontally...
 	// size of box content, depending on orientation
 	getContentSize: function () {
 		if (this.getOrientation() == 'vertical') {
@@ -157,6 +133,46 @@ var OrientationBox = LayoutBase.extend({
 				if (child.nodeType == 1)
 					size += (new CSSBox(child)).getBoxDimension('margin', 'horizontal');
 			return size;
+		}
+	}
+});
+
+var OrientationBoxChild = LayoutBase.extend({
+	updateOrientation: function (axis) {
+		if (axis == 'horizontal') {
+			// set class
+			DOMUtils.addClass(this.element, 'orientation-horizontal-child');
+		
+			// if box doesn't have fixed with, shrink horizontally
+			if (this.box.isContentBoxDimensionAuto(axis))
+				this.box.setCSSLength('width', this.getMinContentWidth());
+			this.data.set('horizontal-shrink', true);
+		} else {
+			// unset class
+			DOMUtils.removeClass(this.element, 'orientation-horizontal-child');
+	
+			// undo horizontal shrinkage
+			if (this.data.get('horizontal-shrink'))
+				this.box.resetCSSLength('width');
+			this.data.set('horizontal-shrink', false)
+		}
+	},
+
+//[TODO] other ways of doing this?
+	// get minimum content width, for initial horizontal sizing
+	'getMinContentWidth': function () {
+		//[FIX] Safari doesn't like dimensions of '0'
+		return DOMUtils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, bind(function () {
+			return this.element.scrollWidth - this.box.getCSSLength('padding-left') - this.box.getCSSLength('padding-right');
+		}, this));
+	},
+	// min/max-content width for browsers that support the CSS property
+	// in theory safari supports '(min-)intrinsic', but it's not equivalent
+	'@Gecko': {
+		'getMinContentWidth': function () {
+			return DOMUtils.swapStyles(this.element, {width: '-moz-min-content'}, bind(function () {
+				return this.box.getBoxDimension('content', 'horizontal');
+			}, this));
 		}
 	}
 });
