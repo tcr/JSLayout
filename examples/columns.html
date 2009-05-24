@@ -11,35 +11,26 @@ padding: 0;
 </style>
 
 <sccript type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></sccript>
-<script src="base2/base2.js"></script>
+
 <script src="../layout.js"></script>
+<script src="_examples.js"></script>
 <script src="sizzle/sizzle.js"></script>
 
 <script>
 
-// main script
-new function () {
-	eval(base2.namespace);
-	eval(base2.lang.namespace);
-	eval(base2.Layout.namespace);
-
-	// loader
-	window.onload = function () {
-//	document.addEventListener('DOMContentLoaded', function () {
-		var layout = new FullLayoutManager(document);
-		forEach(Sizzle('.grid', document), function (element) {
-			layout.setFlexibleProperty(element, 'height');
-			layout.setFlexibleProperty(element, 'width');
-			layout.setOrientation(element, 'horizontal');
-		});
-		forEach(Sizzle('.column', document), function (element) {
-			layout.setFlexibleProperty(element, 'height');
-			layout.setFlexibleProperty(element, 'width');
-		});
-		layout.calculate();
-//	}, false);
-	}
-};
+onContent(function () {
+	var layout = new FullLayoutManager(document);
+	Sizzle('.grid', document).forEach(function (element) {
+		layout.setFlexibleProperty(element, 'height');
+		layout.setFlexibleProperty(element, 'width');
+		layout.setOrientation(element, 'horizontal');
+	});
+	Sizzle('.column', document).forEach(function (element) {
+		layout.setFlexibleProperty(element, 'height');
+		layout.setFlexibleProperty(element, 'width');
+	});
+	layout.calculate();
+});
 
 </script>
 </head>

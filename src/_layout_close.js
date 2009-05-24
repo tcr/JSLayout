@@ -2,7 +2,10 @@
 // package
 //------------------------------------------------------------------------------
 
-	eval(this.exports);
+	// exports
+	window.OrientationManager = OrientationManager;
+	window.LayoutManager = LayoutManager;
+	window.FullLayoutManager = FullLayoutManager;
 };
 
 //

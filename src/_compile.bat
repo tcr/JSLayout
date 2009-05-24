@@ -1,6 +1,7 @@
 REM Orientation Manager
 set "str1=copy "
 set str1=%str1% "_layout_open.js" +
+set str1=%str1% "Base.js" +
 set str1=%str1% "DOMUtils.js" +
 set str1=%str1% "CSSBox.js" + 
 set str1=%str1% "NodeUserData.js" +

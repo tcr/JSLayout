@@ -4,15 +4,163 @@
 //------------------------------------------------------------------------------
 
 new function(_) {
-	var Layout = new base2.Package(this, {
-		name:    'Layout',
-		version: '1.0',
-		imports: '',
-		exports: 'LayoutManager,FullLayoutManager,OrientationManager'
-	});
-	
-	eval(this.imports);
 
+
+/*
+	Base.js, version 1.1
+	Copyright 2006-2007, Dean Edwards
+	License: http://www.opensource.org/licenses/mit-license.php
+*/
+
+var Base = function() {
+	// dummy
+};
+
+Base.extend = function(_instance, _static) { // subclass
+	var extend = Base.prototype.extend;
+	
+	// build the prototype
+	Base._prototyping = true;
+	var proto = new this;
+	extend.call(proto, _instance);
+	delete Base._prototyping;
+	
+	// create the wrapper for the constructor function
+	//var constructor = proto.constructor.valueOf(); //-dean
+	var constructor = proto.constructor;
+	var klass = proto.constructor = function() {
+		if (!Base._prototyping) {
+			if (this._constructing || this.constructor == klass) { // instantiation
+				this._constructing = true;
+				constructor.apply(this, arguments);
+				delete this._constructing;
+			} else if (arguments[0] != null) { // casting
+				return (arguments[0].extend || extend).call(arguments[0], proto);
+			}
+		}
+	};
+	
+	// build the class interface
+	klass.ancestor = this;
+	klass.extend = this.extend;
+	klass.forEach = this.forEach;
+	klass.implement = this.implement;
+	klass.prototype = proto;
+	klass.toString = this.toString;
+	klass.valueOf = function(type) {
+		//return (type == "object") ? klass : constructor; //-dean
+		return (type == "object") ? klass : constructor.valueOf();
+	};
+	extend.call(klass, _static);
+	// class initialisation
+	if (typeof klass.init == "function") klass.init();
+	return klass;
+};
+
+Base.prototype = {	
+	extend: function(source, value) {
+		if (arguments.length > 1) { // extending with a name/value pair
+			var ancestor = this[source];
+			if (ancestor && (typeof value == "function") && // overriding a method?
+				// the valueOf() comparison is to avoid circular references
+				(!ancestor.valueOf || ancestor.valueOf() != value.valueOf()) &&
+				/\bbase\b/.test(value)) {
+				// get the underlying method
+				var method = value.valueOf();
+				// override
+				value = function() {
+					var previous = this.base || Base.prototype.base;
+					this.base = ancestor;
+					var returnValue = method.apply(this, arguments);
+					this.base = previous;
+					return returnValue;
+				};
+				// point to the underlying method
+				value.valueOf = function(type) {
+					return (type == "object") ? value : method;
+				};
+				value.toString = Base.toString;
+			}
+			this[source] = value;
+		} else if (source) { // extending with an object literal
+			var extend = Base.prototype.extend;
+			// if this object has a customised extend method then use it
+			if (!Base._prototyping && typeof this != "function") {
+				extend = this.extend || extend;
+			}
+			var proto = {toSource: null};
+			// do the "toString" and other methods manually
+			var hidden = ["constructor", "toString", "valueOf"];
+			// if we are prototyping then include the constructor
+			var i = Base._prototyping ? 0 : 1;
+			while (key = hidden[i++]) {
+				if (source[key] != proto[key]) {
+					extend.call(this, key, source[key]);
+
+				}
+			}
+			// copy each of the source object's properties to this object
+			for (var key in source) {
+				if (!proto[key]) extend.call(this, key, source[key]);
+			}
+		}
+		return this;
+	},
+
+	base: function() {
+		// call this method from any other method to invoke that method's ancestor
+	}
+};
+
+// initialise
+Base = Base.extend({
+	constructor: function() {
+		this.extend(arguments[0]);
+	}
+}, {
+	ancestor: Object,
+	version: "1.1",
+	
+	forEach: function(object, block, context) {
+		for (var key in object) {
+			if (this.prototype[key] === undefined) {
+				block.call(context, object[key], key, object);
+			}
+		}
+	},
+		
+	implement: function() {
+		for (var i = 0; i < arguments.length; i++) {
+			if (typeof arguments[i] == "function") {
+				// if it's a function, call it
+				arguments[i](this.prototype);
+			} else {
+				// add the interface using the extend method
+				this.prototype.extend(arguments[i]);
+			}
+		}
+		return this;
+	},
+	
+	toString: function() {
+		return String(this.valueOf());
+	}
+});
+
+// important enough to steal from base2
+function bind(fn, context) {
+  var lateBound = typeof fn != "function";
+  if (arguments.length > 2) {
+    var args = _slice.call(arguments, 2);
+    return function() {
+      return (lateBound ? context[fn] : fn).apply(context, args.concat.apply(args, arguments));
+    };
+  } else { // faster if there are no additional arguments
+    return function() {
+      return (lateBound ? context[fn] : fn).apply(context, arguments);
+    };
+  }
+};
 //----------------------------------------------------------------------
 // DOM utilities
 //----------------------------------------------------------------------
@@ -52,18 +200,16 @@ var DOMUtils = {
 	//[TODO] support non-camel-case, maybe
 	swapStyles: function (element, tempStyles, callback) {
 		var curStyles = {};
-		forEach(tempStyles, function (value, prop) {
+		for (var prop in tempStyles)
 			curStyles[prop] = DOMUtils.getStyleProperty(element.style, prop);
-		});
 		DOMUtils.setStyles(element, tempStyles);
 		var ret = callback(element);
 		DOMUtils.setStyles(element, curStyles);
 		return ret;
 	},
 	setStyles: function (element, styles) {
-		forEach(styles, function (value, prop) {
-			DOMUtils.setStyleProperty(element.style, prop, value);
-		});
+		for (var prop in styles)
+			DOMUtils.setStyleProperty(element.style, prop, styles[prop]);
 	},
 	addStylesheet: function (document, css) {
 		var head = document.getElementsByTagName('head')[0] ||
@@ -84,22 +230,23 @@ var DOMUtils = {
 	},
 	hasClass: function (element, className) {
 		return (' ' + (element.className || '') + ' ').indexOf(' ' + className + ' ') != -1;
+	},
+	
+	// detection class
+	isUserAgent: function (regexp) {
+		return regexp.test(navigator.userAgent);
 	}
 };//----------------------------------------------------------------------
 // CSS Box
 //----------------------------------------------------------------------
 
-function CSSBox(element) {
-	if (!element || element.nodeType !== 1)
-		throw new Error('Invalid DOM element supplied.');
-	this.element = element;
-	this.view = DOMUtils.getOwnerDocument(element).defaultView || window;
-}
-CSSBox.AXIS_DIMENSION = {vertical: 'height', horizontal: 'width'};
-CSSBox.AXIS_DIMENSION_UP = {vertical: 'Height', horizontal: 'Width'},
-CSSBox.AXIS_TL = {vertical: 'top', horizontal: 'left'},
-CSSBox.AXIS_BR = {vertical: 'bottom', horizontal: 'right'};
-CSSBox.prototype = {
+var CSSBox = Base.extend({
+	constructor: function (element) {
+		if (!element || element.nodeType !== 1)
+			throw new Error('Invalid DOM element supplied.');
+		this.element = element;
+		this.view = DOMUtils.getOwnerDocument(element).defaultView || window;
+	},
 	_getRoughOffset: function () {
 		if (this.element.getBoundingClientRect) {
 			var rect = this.element.getBoundingClientRect();
@@ -130,7 +277,7 @@ CSSBox.prototype = {
 		if (this.view.getComputedStyle) {
 			var computedStyle = this.view.getComputedStyle(this.element, null);
 			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
-			if (/KTML|Webkit/i.test(navigator.userAgent) && property == 'margin-right' &&
+			if (DOMUtils.isUserAgent(/KTML|Webkit/i) && property == 'margin-right' &&
 			    computedStyle.getPropertyValue('float') == 'none')
 				return Math.max(parseFloat(DOMUtils.swapStyles(this.element, {'margin-left': 'auto'}, bind(function () {
 					return this.view.getComputedStyle(this.element, null).getPropertyValue(property);
@@ -182,7 +329,12 @@ CSSBox.prototype = {
 		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
 		return flag;
 	}
-};
+}, {
+	AXIS_DIMENSION: {vertical: 'height', horizontal: 'width'},
+	AXIS_DIMENSION_UP: {vertical: 'Height', horizontal: 'Width'},
+	AXIS_TL: {vertical: 'top', horizontal: 'left'},
+	AXIS_BR: {vertical: 'bottom', horizontal: 'right'}
+});
 
 //----------------------------------------------------------------------
 // node user data manager
@@ -241,7 +393,7 @@ if (!document.getUserData || !document.setUserData)
 // orientation manager
 //----------------------------------------------------------------------
 
-var OrientationManager = base2.Base.extend({
+var OrientationManager = Base.extend({
 	document: null,
 	constructor: function (document) {
 		// save document reference
@@ -278,7 +430,8 @@ var OrientationManager = base2.Base.extend({
  * orientation boxes
  */
  
-var LayoutBase = Abstract.extend({
+//@abstract
+var LayoutBase = Base.extend({
 	document: null,
 	element: null,
 	box: null,
@@ -390,19 +543,18 @@ var OrientationBoxChild = LayoutBase.extend({
 //[TODO] other ways of doing this?
 	// get minimum content width, for initial horizontal sizing
 	'getMinContentWidth': function () {
-		//[FIX] Safari doesn't like dimensions of '0'
-		return DOMUtils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, bind(function () {
-			return this.element.scrollWidth - this.box.getCSSLength('padding-left') - this.box.getCSSLength('padding-right');
-		}, this));
-	},
-	// min/max-content width for browsers that support the CSS property
-	// in theory safari supports '(min-)intrinsic', but it's not equivalent
-	'@Gecko': {
-		'getMinContentWidth': function () {
+		// min/max-content width for browser that support the CSS property
+		//[NOTE] in theory safari supports '(min-)intrinsic', but it's not equivalent
+		if (DOMUtils.isUserAgent(/Gecko/i)) {
 			return DOMUtils.swapStyles(this.element, {width: '-moz-min-content'}, bind(function () {
 				return this.box.getBoxDimension('content', 'horizontal');
 			}, this));
 		}
+	
+		//[FIX] Safari doesn't like dimensions of '0'
+		return DOMUtils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, bind(function () {
+			return this.element.scrollWidth - this.box.getCSSLength('padding-left') - this.box.getCSSLength('padding-right');
+		}, this));
 	}
 });
 //----------------------------------------------------------------------
@@ -448,7 +600,7 @@ var ResizeObserver = Base.extend({
 // simple element traversal
 //----------------------------------------------------------------------
 
-var ElementTraversal = Module.extend({
+var ElementTraversal = {
 	traverse: function (root, handlers) {
 		// sanitize input
 		if (!root || root.nodeType != 1)
@@ -471,7 +623,7 @@ var ElementTraversal = Module.extend({
 					handlers.ascend(node);
 		} while (node = next);
 	}
-});//----------------------------------------------------------------------
+};//----------------------------------------------------------------------
 // layout manager
 //----------------------------------------------------------------------
 
@@ -722,7 +874,10 @@ var FullLayoutManager = LayoutManager.extend({
 // package
 //------------------------------------------------------------------------------
 
-	eval(this.exports);
+	// exports
+	window.OrientationManager = OrientationManager;
+	window.LayoutManager = LayoutManager;
+	window.FullLayoutManager = FullLayoutManager;
 };
 
 //

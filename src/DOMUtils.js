@@ -37,18 +37,16 @@ var DOMUtils = {
 	//[TODO] support non-camel-case, maybe
 	swapStyles: function (element, tempStyles, callback) {
 		var curStyles = {};
-		forEach(tempStyles, function (value, prop) {
+		for (var prop in tempStyles)
 			curStyles[prop] = DOMUtils.getStyleProperty(element.style, prop);
-		});
 		DOMUtils.setStyles(element, tempStyles);
 		var ret = callback(element);
 		DOMUtils.setStyles(element, curStyles);
 		return ret;
 	},
 	setStyles: function (element, styles) {
-		forEach(styles, function (value, prop) {
-			DOMUtils.setStyleProperty(element.style, prop, value);
-		});
+		for (var prop in styles)
+			DOMUtils.setStyleProperty(element.style, prop, styles[prop]);
 	},
 	addStylesheet: function (document, css) {
 		var head = document.getElementsByTagName('head')[0] ||
@@ -69,5 +67,10 @@ var DOMUtils = {
 	},
 	hasClass: function (element, className) {
 		return (' ' + (element.className || '') + ' ').indexOf(' ' + className + ' ') != -1;
+	},
+	
+	// detection class
+	isUserAgent: function (regexp) {
+		return regexp.test(navigator.userAgent);
 	}
 };

@@ -2,17 +2,13 @@
 // CSS Box
 //----------------------------------------------------------------------
 
-function CSSBox(element) {
-	if (!element || element.nodeType !== 1)
-		throw new Error('Invalid DOM element supplied.');
-	this.element = element;
-	this.view = DOMUtils.getOwnerDocument(element).defaultView || window;
-}
-CSSBox.AXIS_DIMENSION = {vertical: 'height', horizontal: 'width'};
-CSSBox.AXIS_DIMENSION_UP = {vertical: 'Height', horizontal: 'Width'},
-CSSBox.AXIS_TL = {vertical: 'top', horizontal: 'left'},
-CSSBox.AXIS_BR = {vertical: 'bottom', horizontal: 'right'};
-CSSBox.prototype = {
+var CSSBox = Base.extend({
+	constructor: function (element) {
+		if (!element || element.nodeType !== 1)
+			throw new Error('Invalid DOM element supplied.');
+		this.element = element;
+		this.view = DOMUtils.getOwnerDocument(element).defaultView || window;
+	},
 	_getRoughOffset: function () {
 		if (this.element.getBoundingClientRect) {
 			var rect = this.element.getBoundingClientRect();
@@ -43,7 +39,7 @@ CSSBox.prototype = {
 		if (this.view.getComputedStyle) {
 			var computedStyle = this.view.getComputedStyle(this.element, null);
 			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
-			if (/KTML|Webkit/i.test(navigator.userAgent) && property == 'margin-right' &&
+			if (DOMUtils.isUserAgent(/KTML|Webkit/i) && property == 'margin-right' &&
 			    computedStyle.getPropertyValue('float') == 'none')
 				return Math.max(parseFloat(DOMUtils.swapStyles(this.element, {'margin-left': 'auto'}, bind(function () {
 					return this.view.getComputedStyle(this.element, null).getPropertyValue(property);
@@ -95,5 +91,10 @@ CSSBox.prototype = {
 		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
 		return flag;
 	}
-};
+}, {
+	AXIS_DIMENSION: {vertical: 'height', horizontal: 'width'},
+	AXIS_DIMENSION_UP: {vertical: 'Height', horizontal: 'Width'},
+	AXIS_TL: {vertical: 'top', horizontal: 'left'},
+	AXIS_BR: {vertical: 'bottom', horizontal: 'right'}
+});
 

@@ -2,7 +2,7 @@
 // orientation manager
 //----------------------------------------------------------------------
 
-var OrientationManager = base2.Base.extend({
+var OrientationManager = Base.extend({
 	document: null,
 	constructor: function (document) {
 		// save document reference
@@ -39,7 +39,8 @@ var OrientationManager = base2.Base.extend({
  * orientation boxes
  */
  
-var LayoutBase = Abstract.extend({
+//@abstract
+var LayoutBase = Base.extend({
 	document: null,
 	element: null,
 	box: null,
@@ -151,18 +152,17 @@ var OrientationBoxChild = LayoutBase.extend({
 //[TODO] other ways of doing this?
 	// get minimum content width, for initial horizontal sizing
 	'getMinContentWidth': function () {
-		//[FIX] Safari doesn't like dimensions of '0'
-		return DOMUtils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, bind(function () {
-			return this.element.scrollWidth - this.box.getCSSLength('padding-left') - this.box.getCSSLength('padding-right');
-		}, this));
-	},
-	// min/max-content width for browsers that support the CSS property
-	// in theory safari supports '(min-)intrinsic', but it's not equivalent
-	'@Gecko': {
-		'getMinContentWidth': function () {
+		// min/max-content width for browser that support the CSS property
+		//[NOTE] in theory safari supports '(min-)intrinsic', but it's not equivalent
+		if (DOMUtils.isUserAgent(/Gecko/i)) {
 			return DOMUtils.swapStyles(this.element, {width: '-moz-min-content'}, bind(function () {
 				return this.box.getBoxDimension('content', 'horizontal');
 			}, this));
 		}
+	
+		//[FIX] Safari doesn't like dimensions of '0'
+		return DOMUtils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, bind(function () {
+			return this.element.scrollWidth - this.box.getCSSLength('padding-left') - this.box.getCSSLength('padding-right');
+		}, this));
 	}
 });

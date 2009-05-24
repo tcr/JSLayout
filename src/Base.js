@@ -138,3 +138,18 @@ Base = Base.extend({
 		return String(this.valueOf());
 	}
 });
+
+// important enough to steal from base2
+function bind(fn, context) {
+  var lateBound = typeof fn != "function";
+  if (arguments.length > 2) {
+    var args = _slice.call(arguments, 2);
+    return function() {
+      return (lateBound ? context[fn] : fn).apply(context, args.concat.apply(args, arguments));
+    };
+  } else { // faster if there are no additional arguments
+    return function() {
+      return (lateBound ? context[fn] : fn).apply(context, arguments);
+    };
+  }
+};

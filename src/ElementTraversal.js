@@ -2,7 +2,7 @@
 // simple element traversal
 //----------------------------------------------------------------------
 
-var ElementTraversal = Module.extend({
+var ElementTraversal = {
 	traverse: function (root, handlers) {
 		// sanitize input
 		if (!root || root.nodeType != 1)
@@ -25,4 +25,4 @@ var ElementTraversal = Module.extend({
 					handlers.ascend(node);
 		} while (node = next);
 	}
-});
+};
