@@ -23,7 +23,7 @@ var LayoutManager = OrientationManager.extend({
 
 	getFlexibleProperty: function (element, property) {
 		// initialize
-		var box = new LayoutBox(element);
+		var box = new LayoutBoxChild(element);
 		
 		// normalize properties and get axis
 		property = this._normalizeProperty(property);
@@ -36,7 +36,7 @@ var LayoutManager = OrientationManager.extend({
 
 	setFlexibleProperty: function (element, property, flex) {
 		// initialize
-		var box = new LayoutBox(element);
+		var box = new LayoutBoxChild(element);
 		// validate element
 		if (!DOMUtils.contains(this.root, element))
 			throw new Error('Flexible elements must be descendants of the root node.');
@@ -79,7 +79,7 @@ var LayoutManager = OrientationManager.extend({
 			ElementTraversal.traverse(this.root, {
 				ascend: bind(function (parentNode) {
 					// reset/equalize nodes
-					var parent = new LayoutContainer(parentNode, this);
+					var parent = new LayoutBox(parentNode, this);
 					if (parent.hasFlexibleChildren(axis))
 						parent.resetContainerLayout(axis);
 				}, this)
@@ -96,7 +96,7 @@ var LayoutManager = OrientationManager.extend({
 			ElementTraversal.traverse(this.root, {
 				descend: bind(function (parentNode) {
 					// expand nodes
-					var parent = new LayoutContainer(parentNode, this);
+					var parent = new LayoutBox(parentNode, this);
 					if (parent.hasFlexibleChildren(axis))
 						parent.expandContainerLayout(axis);
 				}, this)
@@ -108,7 +108,7 @@ var LayoutManager = OrientationManager.extend({
  * layout boxes
  */
 
-var LayoutContainer = OrientationBox.extend({
+var LayoutBox = OrientationBox.extend({
 	children: null,
 	constructor: function () {
 		// construct layout box
@@ -118,7 +118,7 @@ var LayoutContainer = OrientationBox.extend({
 		this.children = {horizontal: [], vertical: []};
 		for (var child = this.element.firstChild, box; child; child = child.nextSibling)
 			for (var axis in this.children)
-				if (child.nodeType == 1 && (box = new LayoutBox(child)).isFlexibleAlongAxis(axis))
+				if (child.nodeType == 1 && (box = new LayoutBoxChild(child)).isFlexibleAlongAxis(axis))
 					this.children[axis].push(box);
 	},
 	
@@ -193,7 +193,7 @@ var LayoutContainer = OrientationBox.extend({
 	}
 });
 
-var LayoutBox = LayoutBase.extend({	
+var LayoutBoxChild = LayoutBase.extend({	
 	getFlexibleProperty: function (axis, property) {
 		return this.data.has('properties-' + axis) && this.data.get('properties-' + axis)[property];
 	},
@@ -208,7 +208,7 @@ var LayoutBox = LayoutBase.extend({
 		this.data.set('is-flexible-' + axis, true);
 		// reset flex count
 		this.updateDivisor(axis);
-		(new LayoutContainer(this.element.parentNode)).updateDivisor(axis);
+		(new LayoutBox(this.element.parentNode)).updateDivisor(axis);
 	},
 
 	updateDivisor: function (axis) {

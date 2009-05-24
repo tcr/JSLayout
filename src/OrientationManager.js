@@ -22,7 +22,7 @@ var OrientationManager = base2.Base.extend({
 		return (new OrientationBox(element)).getOrientation();
 	},
 	setOrientation: function (element, axis) {
-		/* NOTE: orientation on body is possible, but float containment only works if
+		/* NOTE: orientation on body is possible, but float containment only works in Mozilla if
 		   overflow is defined on the document element, not the body; disallow it for uniformity's sake */
 		
 		// initialize
@@ -64,30 +64,20 @@ var OrientationBox = LayoutBase.extend({
 			return;
 		this.data.set('orientation', axis);
 		
-		// orientation requires some changes
-		if (axis == 'horizontal')
-		{
-			// wrap child text nodes
-			this.containChildTextNodes();
-			// update child elements
-			for (var child = this.element.firstChild; child; child = child.nextSibling)
-				if (child.nodeType == 1)
-					(new OrientationBoxChild(child)).updateOrientation(axis);
+		// wrap or unwrap child text nodes
+		axis == 'horizontal' ? this.containChildTextNodes() : this.restoreChildTextNodes();
+		// update child elements
+		for (var child = this.element.firstChild; child; child = child.nextSibling)
+			if (child.nodeType == 1)
+				(new OrientationBoxChild(child)).updateOrientation(axis);
 			
+		// classes, styles
+		if (axis == 'horizontal') {
 			// add class
 			DOMUtils.addClass(this.element, 'orientation-horizontal');
 			// expand box size to contain floats without wrapping
 			this.box.setCSSLength('width', this.getContentSize());
-		}
-		else
-		{
-			// unwrap child text nodes
-			this.restoreChildTextNodes();
-			// update child elements
-			for (var child = this.element.firstChild; child; child = child.nextSibling)
-				if (child.nodeType == 1)
-					(new OrientationBoxChild(child)).updateOrientation(axis);
-			
+		} else {
 			// remove class and styles
 			DOMUtils.removeClass(element, 'orientation-horizontal');
 			this.box.resetCSSLength('width');
