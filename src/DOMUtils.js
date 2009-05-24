@@ -23,8 +23,14 @@ var DOMUtils = {
 	_toCamelCase: function (property) {
 		return property.replace(/\-([a-z])/g, function (string, letter) { return letter.toUpperCase(); });
 	},
+	getStyleProperty: function (style, prop) {
+		return style.getPropertyValue ? style.getPropertyValue(prop) : style[DOMUtils._toCamelCase(prop)];
+	},
 	setStyleProperty: function (style, prop, val) {
 		style.setProperty ? style.setProperty(prop, val, null) : style[DOMUtils._toCamelCase(prop)] = val;
+	},
+	removeStyleProperty: function (style, prop) {
+		style.removeProperty ? style.removeProperty(prop) : style[DOMUtils._toCamelCase(prop)] = '';
 	},
 	
 	// style manipulation functions
@@ -32,7 +38,7 @@ var DOMUtils = {
 	swapStyles: function (element, tempStyles, callback) {
 		var curStyles = {};
 		forEach(tempStyles, function (value, prop) {
-			curStyles[prop] = element.style[prop];
+			curStyles[prop] = DOMUtils.getStyleProperty(element.style, prop);
 		});
 		DOMUtils.setStyles(element, tempStyles);
 		var ret = callback(element);
@@ -41,7 +47,7 @@ var DOMUtils = {
 	},
 	setStyles: function (element, styles) {
 		forEach(styles, function (value, prop) {
-			element.style[prop] = value;
+			DOMUtils.setStyleProperty(element.style, prop, value);
 		});
 	},
 	addStylesheet: function (document, css) {

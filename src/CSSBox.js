@@ -45,7 +45,7 @@ CSSBox.prototype = {
 			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
 			if (/KTML|Webkit/i.test(navigator.userAgent) && property == 'margin-right' &&
 			    computedStyle.getPropertyValue('float') == 'none')
-				return Math.max(parseFloat(DOMUtils.swapStyles(this.element, {marginLeft: 'auto'}, bind(function () {
+				return Math.max(parseFloat(DOMUtils.swapStyles(this.element, {'margin-left': 'auto'}, bind(function () {
 					return this.view.getComputedStyle(this.element, null).getPropertyValue(property);
 				}, this))), 0);
 			// return computed style value
@@ -53,12 +53,12 @@ CSSBox.prototype = {
 		}
 		else if (this.element.currentStyle) {
 			// getComputedStyle emulation for IE (courtesy Dean Edwards)
-			var currentVal = this.element.currentStyle[this._toCamelCase(property)];
+			var currentVal = DOMUtils.getStyleProperty(this.element.currentStyle, property);
 			if (property.match(/^(width|height)$/))
 				return this._shiftDimension(this.getBoxDimension('padding', {width: 'horizontal', height: 'vertical'}[property]), 'padding', false);
 			if (/^\-?\d+(px)?$/i.test(currentVal) || currentVal == 'none')
 				return parseFloat(currentVal) || 0;
-			if (property.match(/^border/) && !(/^\-\d+/.test(currentVal))) { // border-named values
+			if (property.match(/^border/) && !(/^\-\d+/.test(currentVal))) { // border word-values
 				var runtimeStyleVal = this.element.runtimeStyle.borderTopWidth;
 				this.element.runtimeStyle.borderTopWidth = currentVal;
 				var value = this.element.clientTop;
