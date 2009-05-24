@@ -149,8 +149,9 @@ var LayoutBox = OrientationBox.extend({
 		// calculate available free space in parent
 		var AXIS_DIMENSION = {horizontal: 'width', vertical: 'height'};
 		var contentSize, contentBoxSize, divisor, oldFlexUnit, newFlexUnit;
-		// get content box size
-		contentBoxSize = this.box.getBoxDimension('content', axis);
+		// get content box size (actual, or desired by flex)
+		contentBoxSize = this.data.has('content-size-cache-' + axis) ?
+		    this.data.get('content-size-cache-' + axis) : this.box.getBoxDimension('content', axis);
 			
 		// calculate flex unit (with flow)
 		if (axis == this.getOrientation()) {
@@ -205,7 +206,6 @@ var LayoutBoxChild = LayoutBase.extend({
 	setFlexibleProperty: function (axis, property, value) {
 		this.data.ensure('properties-' + axis, {});
 		this.data.get('properties-' + axis)[property] = value;
-		this.data.set('is-flexible-' + axis, true);
 		// reset flex count
 		this.updateDivisor(axis);
 		(new LayoutBox(this.element.parentNode)).updateDivisor(axis);
@@ -220,7 +220,7 @@ var LayoutBoxChild = LayoutBase.extend({
 	},
 	
 	isFlexibleAlongAxis: function (axis) {
-		return !!this.data.get('is-flexible-' + axis);
+		return this.data.has('divisor-' + axis) && (this.data.get('divisor-' + axis) > 0);
 	},
 	
 	updateFlexibleProperties: function (axis, unit) {
@@ -228,5 +228,7 @@ var LayoutBoxChild = LayoutBase.extend({
 		var properties = this.data.get('properties-' + axis) || {};
 		for (var prop in properties)
 			this.box.setCSSLength((prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop]);
+		if (prop.match(/^(width|height)$/))
+			this.data.set('content-size-cache-' + axis, unit * properties[prop]);
 	}
 });

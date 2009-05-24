@@ -2,12 +2,15 @@
 
 <html>
   <head>
-    <title>Orientation Tester</title>
+    <title>Orientation Manager</title>
     
-<script src="base2/base2.js"></script>
+<!--
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+-->
+
 <script src="../orientation.js"></script>
-    
-<!-- <script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script> -->
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
     
 <style>
 
@@ -87,18 +90,15 @@ color: #444;
     <script>
 
 // main script
-new function () {
-	eval(base2.namespace);
-	eval(base2.Orientation.namespace);
+onContent(function () {
+	// node reference
+	var labs = document.getElementById('labs');
 
-	// loader
-	DOM.bind(document);
-	document.addEventListener('DOMContentLoaded', function () {
-		var manager = new OrientationManager(document);
-		manager.setOrientation(document.querySelector('#labs'), 'horizontal');
-//		manager.setOrientation(document.querySelector('#labs'), 'vertical');
-	}, false);
-};
+	// orientation
+	var manager = new OrientationManager(document);
+	manager.setOrientation(labs, 'horizontal');
+//	manager.setOrientation(labs, 'vertical');
+});
     
     </script>
   </head>

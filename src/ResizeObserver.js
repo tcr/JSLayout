@@ -10,7 +10,7 @@ var ResizeObserver = Base.extend({
 		this.refresh();
 		
 		// add polling function
-		setInterval(bind(this.poll, this), 250);
+		setTimeout(bind(this.poll, this), 25);
 	},
 	
 	node: null,
@@ -32,6 +32,7 @@ var ResizeObserver = Base.extend({
 		}
 		// update cache
 		this.refresh();
+		setTimeout(bind(this.poll, this), 25);
 	},
 	listeners: [],
 	addListener: function (listener) {

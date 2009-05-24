@@ -279,9 +279,10 @@ var CSSBox = Base.extend({
 			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
 			if (DOMUtils.isUserAgent(/KTML|Webkit/i) && property == 'margin-right' &&
 			    computedStyle.getPropertyValue('float') == 'none')
-				return Math.max(parseFloat(DOMUtils.swapStyles(this.element, {'margin-left': 'auto'}, bind(function () {
+//[TODO] is there a quicker way than float: left?
+				return parseFloat(DOMUtils.swapStyles(this.element, {'float': 'left'}, bind(function () {
 					return this.view.getComputedStyle(this.element, null).getPropertyValue(property);
-				}, this))), 0);
+				}, this)));
 			// return computed style value
 			return parseFloat(computedStyle.getPropertyValue(property));
 		}
@@ -311,10 +312,12 @@ var CSSBox = Base.extend({
 		throw new Error('Cannot get computed element style.');
 	},
 	setCSSLength: function (property, length) {
-		DOMUtils.setStyleProperty(this.element.style, this._normalizeProperty(property), length + 'px')
+		property = this._normalizeProperty(property);
+		DOMUtils.setStyleProperty(this.element.style, property, length + 'px');
 	},
 	resetCSSLength: function (property) {
-		DOMUtils.removeStyleProperty(this.element.style, this._normalizeProperty(property))
+		property = this._normalizeProperty(property);
+		DOMUtils.removeStyleProperty(this.element.style, property);
 	},
 	_normalizeProperty: function (property) {
 		return property.replace(/^(border-[a-z]+)$/, '$1-width');
@@ -471,7 +474,7 @@ var OrientationBox = LayoutBase.extend({
 			this.box.setCSSLength('width', this.getContentSize());
 		} else {
 			// remove class and styles
-			DOMUtils.removeClass(element, 'orientation-horizontal');
+			DOMUtils.removeClass(this.element, 'orientation-horizontal');
 			this.box.resetCSSLength('width');
 		}
 	},

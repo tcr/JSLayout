@@ -80,7 +80,7 @@ var OrientationBox = LayoutBase.extend({
 			this.box.setCSSLength('width', this.getContentSize());
 		} else {
 			// remove class and styles
-			DOMUtils.removeClass(element, 'orientation-horizontal');
+			DOMUtils.removeClass(this.element, 'orientation-horizontal');
 			this.box.resetCSSLength('width');
 		}
 	},

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Splitter Test</title>
+<title>Splitters using JSLayout</title>
 <style>
 #panel, #content {
 padding: 1px 0.5em;
@@ -35,58 +35,55 @@ overflow: auto;
 }
 </style>
 
+<!--
 <script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
-<script src="base2/base2.js"></script>
+-->
+
 <script src="../layout.js"></script>
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
 
 <script>
-// main script
-new function () {
-	eval(base2.namespace);
-	eval(base2.lang.namespace);
-	eval(base2.Layout.namespace);
 
-	// loader
-	document.addEventListener('DOMContentLoaded', function () {
-		// node references
-		var container = document.getElementById('container');
-		var splitter = document.getElementById('splitter');
-		var panel = document.getElementById('panel');
-		var content = document.getElementById('content');
-		
-		// layout
-		layout = new FullLayoutManager(document);
-		layout.setOrientation(container, 'horizontal');
-		forEach([container, panel, splitter, content], function (element) {
-			layout.setFlexibleProperty(element, 'height');
-		});
-		forEach([container, content], function (element) {
-			layout.setFlexibleProperty(element, 'width');
-		});
-		layout.calculate();
-		
-		// get splitter padding
-		var rect = panel.getBoundingClientRect(), computed = document.defaultView.getComputedStyle(panel, null);
-		var offset = rect.right - parseFloat(computed.getPropertyValue('width'));
-		// create the splitter
-		var moveHandler = function (e) {
-			panel.style.width = Math.max(Math.min(e.pageX - rect.left - offset, 500), 0) + 'px';
+onContent(function () {
+	// node references
+	var container = document.getElementById('container');
+	var splitter = document.getElementById('splitter');
+	var panel = document.getElementById('panel');
+	var content = document.getElementById('content');
+	
+	// layout
+	layout = new FullLayoutManager(document);
+	layout.setOrientation(container, 'horizontal');
+	[container, panel, splitter, content].forEach(function (element) {
+		layout.setFlexibleProperty(element, 'height');
+	});
+	[container, content].forEach(function (element) {
+		layout.setFlexibleProperty(element, 'width');
+	});
+	layout.calculate();
+	
+	// get splitter padding
+	var rect = panel.getBoundingClientRect(), computed = document.defaultView.getComputedStyle(panel, null);
+	var offset = rect.right - parseFloat(computed.getPropertyValue('width'));
+	// create the splitter
+	var moveHandler = function (e) {
+		panel.style.width = Math.max(Math.min(e.pageX - rect.left - offset, 500), 0) + 'px';
 //			layout.resetOrientationMinima(container);
 //[TODO] update orientation minimums
-			layout.recalculate();
-		}
-		splitter.addEventListener('mousedown', function (e) {
-			// get the left offset of the panel
-			document.addEventListener('mousemove', moveHandler, false);
-			container.style.cursor = 'w-resize';
-			e.preventDefault();
-		}, false);
-		document.addEventListener('mouseup', function () {
-			document.removeEventListener('mousemove', moveHandler, false);
-			container.style.cursor = 'auto';
-		}, false);
+		layout.recalculate();
+	}
+	splitter.addEventListener('mousedown', function (e) {
+		// get the left offset of the panel
+		document.addEventListener('mousemove', moveHandler, false);
+		container.style.cursor = 'w-resize';
+		e.preventDefault();
 	}, false);
-};
+	document.addEventListener('mouseup', function () {
+		document.removeEventListener('mousemove', moveHandler, false);
+		container.style.cursor = 'auto';
+	}, false);
+});
 </script>
 </head>
 

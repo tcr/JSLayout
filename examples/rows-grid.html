@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>Layout Manager</title>
+<style>
+div {
+margin: 0;
+padding: 0;
+}
+</style>
+
+<!--
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+-->
+
+<script src="../layout.js"></script>
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
+
+<script>
+
+onContent(function () {
+	var layout = new FullLayoutManager(document);
+	Sizzle('.row', document).forEach(function (element) {
+		layout.setFlexibleProperty(element, 'height');
+		layout.setOrientation(element, 'horizontal');
+	});
+	Sizzle('.cell', document).forEach(function (element) {
+		layout.setFlexibleProperty(element, 'height');
+		layout.setFlexibleProperty(element, 'width');
+	});
+	layout.calculate();
+});
+
+</script>
+</head>
+
+<body id="container">
+<div class="row">
+<div class="cell" style="background: red">This is a cell. This is a cell. This is a cell.</div>
+<div class="cell" style="background: blue">This is a cell. This is a cell. This is a cell.</div>
+<div class="cell" style="background: green">This is a cell. This is a cell. This is a cell.</div>
+</div>
+<div class="row">
+<div class="cell" style="background: green">This is a cell. This is a cell. This is a cell.</div>
+<div class="cell" style="background: red">This is a cell. This is a cell. This is a cell.</div>
+<div class="cell" style="background: blue">This is a cell. This is a cell. This is a cell.</div>
+</div>
+<div class="row">
+<div class="cell" style="background: blue">This is a cell. This is a cell. This is a cell.</div>
+<div class="cell" style="background: green">This is a cell. This is a cell. This is a cell.</div>
+<div class="cell" style="background: red">This is a cell. This is a cell. This is a cell.</div>
+</div>
+</body>
+</html>

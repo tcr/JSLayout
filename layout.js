@@ -279,9 +279,10 @@ var CSSBox = Base.extend({
 			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
 			if (DOMUtils.isUserAgent(/KTML|Webkit/i) && property == 'margin-right' &&
 			    computedStyle.getPropertyValue('float') == 'none')
-				return Math.max(parseFloat(DOMUtils.swapStyles(this.element, {'margin-left': 'auto'}, bind(function () {
+//[TODO] is there a quicker way than float: left?
+				return parseFloat(DOMUtils.swapStyles(this.element, {'float': 'left'}, bind(function () {
 					return this.view.getComputedStyle(this.element, null).getPropertyValue(property);
-				}, this))), 0);
+				}, this)));
 			// return computed style value
 			return parseFloat(computedStyle.getPropertyValue(property));
 		}
@@ -311,10 +312,12 @@ var CSSBox = Base.extend({
 		throw new Error('Cannot get computed element style.');
 	},
 	setCSSLength: function (property, length) {
-		DOMUtils.setStyleProperty(this.element.style, this._normalizeProperty(property), length + 'px')
+		property = this._normalizeProperty(property);
+		DOMUtils.setStyleProperty(this.element.style, property, length + 'px');
 	},
 	resetCSSLength: function (property) {
-		DOMUtils.removeStyleProperty(this.element.style, this._normalizeProperty(property))
+		property = this._normalizeProperty(property);
+		DOMUtils.removeStyleProperty(this.element.style, property);
 	},
 	_normalizeProperty: function (property) {
 		return property.replace(/^(border-[a-z]+)$/, '$1-width');
@@ -471,7 +474,7 @@ var OrientationBox = LayoutBase.extend({
 			this.box.setCSSLength('width', this.getContentSize());
 		} else {
 			// remove class and styles
-			DOMUtils.removeClass(element, 'orientation-horizontal');
+			DOMUtils.removeClass(this.element, 'orientation-horizontal');
 			this.box.resetCSSLength('width');
 		}
 	},
@@ -569,7 +572,7 @@ var ResizeObserver = Base.extend({
 		this.refresh();
 		
 		// add polling function
-		setInterval(bind(this.poll, this), 250);
+		setTimeout(bind(this.poll, this), 25);
 	},
 	
 	node: null,
@@ -591,6 +594,7 @@ var ResizeObserver = Base.extend({
 		}
 		// update cache
 		this.refresh();
+		setTimeout(bind(this.poll, this), 25);
 	},
 	listeners: [],
 	addListener: function (listener) {
@@ -774,8 +778,9 @@ var LayoutBox = OrientationBox.extend({
 		// calculate available free space in parent
 		var AXIS_DIMENSION = {horizontal: 'width', vertical: 'height'};
 		var contentSize, contentBoxSize, divisor, oldFlexUnit, newFlexUnit;
-		// get content box size
-		contentBoxSize = this.box.getBoxDimension('content', axis);
+		// get content box size (actual, or desired by flex)
+		contentBoxSize = this.data.has('content-size-cache-' + axis) ?
+		    this.data.get('content-size-cache-' + axis) : this.box.getBoxDimension('content', axis);
 			
 		// calculate flex unit (with flow)
 		if (axis == this.getOrientation()) {
@@ -830,7 +835,6 @@ var LayoutBoxChild = LayoutBase.extend({
 	setFlexibleProperty: function (axis, property, value) {
 		this.data.ensure('properties-' + axis, {});
 		this.data.get('properties-' + axis)[property] = value;
-		this.data.set('is-flexible-' + axis, true);
 		// reset flex count
 		this.updateDivisor(axis);
 		(new LayoutBox(this.element.parentNode)).updateDivisor(axis);
@@ -845,7 +849,7 @@ var LayoutBoxChild = LayoutBase.extend({
 	},
 	
 	isFlexibleAlongAxis: function (axis) {
-		return !!this.data.get('is-flexible-' + axis);
+		return this.data.has('divisor-' + axis) && (this.data.get('divisor-' + axis) > 0);
 	},
 	
 	updateFlexibleProperties: function (axis, unit) {
@@ -853,6 +857,8 @@ var LayoutBoxChild = LayoutBase.extend({
 		var properties = this.data.get('properties-' + axis) || {};
 		for (var prop in properties)
 			this.box.setCSSLength((prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop]);
+		if (prop.match(/^(width|height)$/))
+			this.data.set('content-size-cache-' + axis, unit * properties[prop]);
 	}
 });//----------------------------------------------------------------------
 // full-page layout manager

@@ -4,35 +4,29 @@
 <head>
 <title>Layout Manager</title>
 <style>
-.row {
+div {
 margin: 0;
 padding: 0;
 }
 </style>
 
-<script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
-<script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
-<script src="layout/orientation.js"></script>
-<link href="layout/orientation.css" rel="stylesheet">
-<script src="layout/layout.js"></script>
+<!--
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+-->
+
+<script src="../layout.js"></script>
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
 
 <script>
 
-// main script
-new function () {
-	eval(base2.namespace);
-
-	// loader
-	DOM.bind(document);
-	document.addEventListener('DOMContentLoaded', function () {
-		var layout = new LayoutManager({recalcOnResize: true, expandBody: true});
-		document.querySelectorAll('.row').forEach(function (element) {
-			layout.setFlexibleProperty(element, 'height');
-		});
-		
-		layout.recalcLayout();
-	}, false);
-};
+onContent(function () {
+	var layout = new FullLayoutManager(document);
+	Sizzle('.row', document).forEach(function (element) {
+		layout.setFlexibleProperty(element, 'height');
+	});
+	layout.calculate();
+});
 
 </script>
 </head>
