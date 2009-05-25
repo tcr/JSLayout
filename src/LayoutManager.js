@@ -10,10 +10,10 @@ var LayoutManager = OrientationManager.extend({
 		if (!root || root.nodeType != 1)
 			throw new Error('Layout manager root must be an element.');
 		// orientation manager constructor
-		OrientationManager.call(this, Utils.getOwnerDocument(root));
+		OrientationManager.call(this, DOMUtils.getOwnerDocument(root));
 		
 		// check root position
-		if (!Utils.isAncestorOf(this.body, root) && root != this.body)
+		if (!DOMUtils.isAncestorOf(this.body, root) && root != this.body)
 			throw new Error('Root node must be a descendant of the body element or the body itself.');
 		
 		// create resize listener
@@ -38,7 +38,7 @@ var LayoutManager = OrientationManager.extend({
 		// initialize
 		var box = new LayoutBoxChild(element);
 		// validate element
-		if (!Utils.isAncestorOf(this.root, element))
+		if (!DOMUtils.isAncestorOf(this.root, element))
 			throw new Error('Flexible elements must be descendants of the root node.');
 			
 		// normalize properties and get axis
@@ -128,12 +128,8 @@ var LayoutBox = OrientationBox.extend({
 		return this.children[axis].length > 0;
 	},
 	
-	updateDivisor: function (axis) {
-		// set flexible properties
-		var divisor = 0;
-		for (var children = this.children[axis], i = 0; i < children.length; i++)
-			divisor += children[i].data.get('divisor-' + axis);
-		this.data.set('container-divisor-' + axis, divisor);
+	updateDivisor: function (axis, delta) {
+		this.data.set('container-divisor-' + axis, (this.data.get('container-divisor-' + axis) || 0) + delta);
 	},
 
 	resetContainerLayout: function (axis) {
@@ -153,7 +149,7 @@ var LayoutBox = OrientationBox.extend({
 		var contentSize, contentBoxSize, divisor, oldFlexUnit, newFlexUnit;
 		// get content box size (actual, or desired by flex)
 		contentBoxSize = this.data.has('content-size-cache-' + axis) ?
-		    this.data.get('content-size-cache-' + axis) : this.box.getBoxDimension('content', axis);
+		    this.data.get('content-size-cache-' + axis) : BoxUtils.getBoxDimension(this.element, 'content', axis);
 			
 		// calculate flex unit (with flow)
 		if (axis == this.getOrientation()) {
@@ -164,7 +160,7 @@ var LayoutBox = OrientationBox.extend({
 			// content box dimensions may be larger than flex unit; subtract from content size
 			for (var children = this.children[axis], i = 0; i < children.length; i++)
 				if (children[i].hasFlexibleProperty(axis, AXIS_DIMENSION[axis]))
-					contentSize -= children[i].box.getBoxDimension('content', axis) -
+					contentSize -= BoxUtils.getBoxDimension(children[i].element, 'content', axis) -
 					    (oldFlexUnit * children[i].getFlexibleProperty(axis, AXIS_DIMENSION[axis]));
 		}
 		
@@ -172,12 +168,12 @@ var LayoutBox = OrientationBox.extend({
 		for (var children = this.children[axis], i = 0; i < children.length; i++) {
 			// calculate flex unit (against flow)
 			if (axis != this.getOrientation()) {
-				contentSize = children[i].box.getBoxDimension('margin', axis);
+				contentSize = BoxUtils.getBoxDimension(children[i].element, 'margin', axis);
 				divisor = children[i].data.get('divisor-' + axis);
 				oldFlexUnit = children[i].data.get('unit-' + axis);
 				// content box dimensions may be larger than flex unit; subtract from content size
 				if (children[i].hasFlexibleProperty(axis, AXIS_DIMENSION[axis]))
-					contentSize -= children[i].box.getBoxDimension('content', axis) -
+					contentSize -= BoxUtils.getBoxDimension(children[i].element, 'content', axis) -
 					    (oldFlexUnit * children[i].getFlexibleProperty(axis, AXIS_DIMENSION[axis]));
 			}
 			
@@ -206,26 +202,25 @@ var LayoutBoxChild = LayoutBase.extend({
 	},
 	
 	setFlexibleProperty: function (axis, property, value) {
+		// get divisor delta
 		this.data.ensure('properties-' + axis, {});
+		var delta = value - (this.getFlexibleProperty(axis, property) || 0);
+		// update divisors
+		this.updateDivisor(axis, delta);
+		(new LayoutBox(this.element.parentNode)).updateDivisor(axis, delta);
+		// set property
 		this.data.get('properties-' + axis)[property] = value;
-		// reset flex count
-		this.updateDivisor(axis);
-		(new LayoutBox(this.element.parentNode)).updateDivisor(axis);
 		
 		//[FIX] for dimensions, we must be using content-box sizing
 		if (property.match(/^(height|width)$/)) {
-			Utils.setStyleProperty(this.element.style, 'box-sizing', 'content-box');
-			Utils.setStyleProperty(this.element.style, '-moz-box-sizing', 'content-box');
-			Utils.setStyleProperty(this.element.style, '-webkit-box-sizing', 'content-box');
+			CSSUtils.setStyleProperty(this.element.style, 'box-sizing', 'content-box');
+			CSSUtils.setStyleProperty(this.element.style, '-moz-box-sizing', 'content-box');
+			CSSUtils.setStyleProperty(this.element.style, '-webkit-box-sizing', 'content-box');
 		}
 	},
-
-	updateDivisor: function (axis) {
-		// set flexible properties
-		var properties = this.data.get('properties-' + axis) || {}, divisor = 0;
-		for (var prop in properties)
-			divisor += properties[prop];
-		this.data.set('divisor-' + axis, divisor);
+	
+	updateDivisor: function (axis, delta) {
+		this.data.set('divisor-' + axis, (this.data.get('divisor-' + axis) || 0) + delta);
 	},
 	
 	isFlexibleAlongAxis: function (axis) {
@@ -236,7 +231,7 @@ var LayoutBoxChild = LayoutBase.extend({
 		// set flexible properties
 		var properties = this.data.get('properties-' + axis) || {};
 		for (var prop in properties)
-			this.box.setCSSLength((prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop]);
+			BoxUtils.setCSSLength(this.element, (prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop]);
 		if (prop.match(/^(width|height)$/))
 			this.data.set('content-size-cache-' + axis, unit * properties[prop]);
 	}

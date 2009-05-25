@@ -11,6 +11,18 @@ new function(_) {
 //----------------------------------------------------------------------
 
 var Utils = {
+	// UA detection
+	isUserAgent: function (regexp) {
+		return regexp.test(navigator.userAgent);
+	},
+	
+	// function binding
+	bind: function (fn, context) {
+		return function () { return fn.apply(context, arguments ); };
+	}
+};
+
+var DOMUtils = {
 	// node manipulation
 	getOwnerDocument: function (node) {
 		return node.ownerDocument || node.document;
@@ -28,34 +40,39 @@ var Utils = {
 	isWhitespaceNode: function (node) {
 		return node && node.nodeType == 3 && node.data.match(/^\s+$/);
 	},
-	
+	isElement: function (node) {
+		return node && node.nodeType == 1;
+	}
+};
+
+var CSSUtils = {
 	// style object manipulation
 	_toCamelCase: function (property) {
 		return property.replace(/\-([a-z])/g, function (string, letter) { return letter.toUpperCase(); });
 	},
 	getStyleProperty: function (style, prop) {
-		return style.getPropertyValue ? style.getPropertyValue(prop) : style[Utils._toCamelCase(prop)];
+		return style.getPropertyValue ? style.getPropertyValue(prop) : style[CSSUtils._toCamelCase(prop)];
 	},
 	setStyleProperty: function (style, prop, val) {
-		style.setProperty ? style.setProperty(prop, val, null) : style[Utils._toCamelCase(prop)] = val;
+		style.setProperty ? style.setProperty(prop, val, null) : style[CSSUtils._toCamelCase(prop)] = val;
 	},
 	removeStyleProperty: function (style, prop) {
-		style.removeProperty ? style.removeProperty(prop) : style[Utils._toCamelCase(prop)] = '';
+		style.removeProperty ? style.removeProperty(prop) : style[CSSUtils._toCamelCase(prop)] = '';
 	},
 	
 	// style manipulation functions
 	swapStyles: function (element, tempStyles, callback) {
 		var curStyles = {};
 		for (var prop in tempStyles)
-			curStyles[prop] = Utils.getStyleProperty(element.style, prop);
-		Utils.setStyles(element, tempStyles);
+			curStyles[prop] = CSSUtils.getStyleProperty(element.style, prop);
+		CSSUtils.setStyles(element, tempStyles);
 		var ret = callback(element);
-		Utils.setStyles(element, curStyles);
+		CSSUtils.setStyles(element, curStyles);
 		return ret;
 	},
 	setStyles: function (element, styles) {
 		for (var prop in styles)
-			Utils.setStyleProperty(element.style, prop, styles[prop]);
+			CSSUtils.setStyleProperty(element.style, prop, styles[prop]);
 	},
 	addStylesheet: function (document, css) {
 		var head = document.getElementsByTagName('head')[0] ||
@@ -68,7 +85,7 @@ var Utils = {
 
 	// class attribute manipulation (base2)
 	addClass: function (element, token) {
-		if (!Utils.hasClass(element, token))
+		if (!CSSUtils.hasClass(element, token))
 			element.className += (element.className ? ' ' : '') + token;
 	},
 	removeClass: function (element, token) {
@@ -76,16 +93,103 @@ var Utils = {
 	},
 	hasClass: function (element, token) {
 		return (new RegExp('(^|\\s)' + token + '(\\s|$)')).test(element.className || '');
+	}
+};
+
+var BoxUtils = {
+	// box constants
+	AXIS_DIMENSION: {vertical: 'height', horizontal: 'width'},
+	AXIS_DIMENSION_UP: {vertical: 'Height', horizontal: 'Width'},
+	AXIS_TL: {vertical: 'top', horizontal: 'left'},
+	AXIS_BR: {vertical: 'bottom', horizontal: 'right'},
+	DIMENSION_AXIS: {width: 'horizontal', height: 'vertical'},
+
+	// CSS box dimensions
+	_shiftDimension: function (element, dimension, axis, prop, expand) {
+		return dimension +
+		    (BoxUtils.getCSSLength(element, prop + '-' + BoxUtils.AXIS_TL[axis]) +
+		     BoxUtils.getCSSLength(element, prop + '-' + BoxUtils.AXIS_BR[axis]))*(expand?1:-1);
+	},
+	getBoxDimension: function (element, type, axis) {
+		if (type == 'content')
+			return BoxUtils.getCSSLength(element, BoxUtils.AXIS_DIMENSION[axis]);
+		if (type == 'border')
+			if (element.getBoundingClientRect) {
+				var rect = element.getBoundingClientRect();
+				return rect[BoxUtils.AXIS_BR[axis]] - rect[BoxUtils.AXIS_TL[axis]];
+			} else
+				return element['offset' + BoxUtils.AXIS_DIMENSION_UP[axis]];
+		return BoxUtils._shiftDimension(element, BoxUtils.getBoxDimension(element, 'border', axis), axis, type, type == 'margin');
+	},
+	isContentBoxDimensionAuto: function (element, axis) {
+		// auto will not expand offset dimension with padding
+		var temp = CSSUtils.getStyleProperty(element.style, 'padding-' + BoxUtils.AXIS_TL[axis]);
+		CSSUtils.setStyleProperty(element.style, 'padding-' + BoxUtils.AXIS_TL[axis], '1px');
+		var dimension = element['offset' + BoxUtils.AXIS_DIMENSION_UP[axis]];
+		CSSUtils.setStyleProperty(element.style, 'padding-' + BoxUtils.AXIS_TL[axis], '2px');
+		var flag = element['offset' + BoxUtils.AXIS_DIMENSION_UP[axis]] == dimension;
+		CSSUtils.setStyleProperty(element.style, 'padding-' + BoxUtils.AXIS_TL[axis], temp);
+		return flag;
 	},
 	
-	// UA detection
-	isUserAgent: function (regexp) {
-		return regexp.test(navigator.userAgent);
+	// CSS box lengths
+	_normalizeCSSLength: function (property) {
+		return property.replace(/^(border-[a-z]+)$/, '$1-width');
+	},
+	getCSSLength: function (element, property) {
+		property = BoxUtils._normalizeCSSLength(property);
+		if (window.getComputedStyle) {
+			var view = element.ownerDocument.defaultView, computedStyle = view.getComputedStyle(element, null);
+			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
+			if (Utils.isUserAgent(/KTML|Webkit/i) && property == 'margin-right' &&
+			    computedStyle.getPropertyValue('float') == 'none')
+//[TODO] is there a quicker way than float: left?
+				return parseFloat(CSSUtils.swapStyles(element, {'float': 'left'}, function () {
+					return view.getComputedStyle(element, null).getPropertyValue(property);
+				}));
+			// return computed style value
+			return parseFloat(computedStyle.getPropertyValue(property));
+		}
+		else if (element.currentStyle) {
+			// getComputedStyle emulation for IE (courtesy Dean Edwards)
+			var currentVal = Utils.getStyleProperty(element.currentStyle, property);
+			if (property.match(/^(width|height)$/))
+				return BoxUtils._shiftDimension(element, BoxUtils.getBoxDimension('padding', BoxUtils.DIMENSION_AXIS[property]), 'padding', false);
+			if (/^\-?\d+(px)?$/i.test(currentVal) || currentVal == 'none')
+				return parseFloat(currentVal) || 0;
+			if (property.match(/^border/) && !(/^\-\d+/.test(currentVal))) { // border word-values
+				var runtimeStyleVal = element.runtimeStyle.borderTopWidth;
+				element.runtimeStyle.borderTopWidth = currentVal;
+				var value = element.clientTop;
+				element.runtimeStyle.borderTopWidth = runtimeStyleVal;
+			} else { // length values
+				var runtimeStyleVal = element.runtimeStyle.left;
+				var styleVal = element.style.left;
+				element.runtimeStyle.left = element.currentStyle.left;
+				element.style.left = currentVal || 0;
+				var value = element.style.pixelLeft;
+				element.style.left = styleVal;
+				element.runtimeStyle.left = runtimeStyleVal;
+			}
+			return value;
+		}
+		throw new Error('Cannot get computed element style.');
+	},
+	setCSSLength: function (element, property, length) {
+		CSSUtils.setStyleProperty(element.style, BoxUtils._normalizeCSSLength(property), length + 'px');
+	},
+	resetCSSLength: function (element, property) {
+		CSSUtils.removeStyleProperty(element.style, BoxUtils._normalizeCSSLength(property));
 	},
 	
-	// function binding
-	bind: function (fn, context) {
-		return function () { return fn.apply(context, arguments ); };
+	// relative offset calculation
+	getRelativeOffset: function (element) {
+		if (element.getBoundingClientRect) {
+			var rect = element.getBoundingClientRect();
+			return {x: rect.left, y: rect.top};
+		}
+		// offsetTop, left
+		return {x: element.offsetLeft, y: element.offsetTop};
 	}
 };//------------------------------------------------------------------------------
 // JavaScript Inheritance
@@ -126,109 +230,6 @@ Structure.extend = function (p, s) {
 	// return new factory object			
 	return Factory;
 };//----------------------------------------------------------------------
-// CSS Box
-//----------------------------------------------------------------------
-
-var CSSBox = Structure.extend({
-	constructor: function (element) {
-		if (!element || element.nodeType !== 1)
-			throw new Error('Invalid DOM element supplied.');
-		this.element = element;
-		this.view = Utils.getOwnerDocument(element).defaultView || window;
-	},
-	_getRoughOffset: function () {
-		if (this.element.getBoundingClientRect) {
-			var rect = this.element.getBoundingClientRect();
-			return {x: rect.left, y: rect.top};
-		}
-		// offsetTop, left
-		return {x: this.element.offsetLeft, y: this.element.offsetTop};
-	},
-	_shiftDimension: function (dimension, axis, prop, expand) {
-		return dimension + (this.getCSSLength(prop + '-' + CSSBox.AXIS_TL[axis]) + this.getCSSLength(prop + '-' + CSSBox.AXIS_BR[axis]))*(expand?1:-1)
-	},
-	getBoxDimension: function (type, axis) {
-		if (type == 'content')
-			return this.getCSSLength(CSSBox.AXIS_DIMENSION[axis]);
-		if (this.element.getBoundingClientRect) {
-			var rect = this.element.getBoundingClientRect();
-			var dimension = rect[CSSBox.AXIS_BR[axis]] - rect[CSSBox.AXIS_TL[axis]];
-		} else
-			var dimension = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]];
-		switch (type) {
-			case 'margin': return this._shiftDimension(dimension, axis, 'margin', true);
-			case 'border': return dimension;
-			case 'padding': return this._shiftDimension(dimension, axis, 'border', false);
-		}
-	},
-	getCSSLength: function (property) {
-		property = this._normalizeProperty(property);
-		if (this.view.getComputedStyle) {
-			var computedStyle = this.view.getComputedStyle(this.element, null);
-			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
-			if (Utils.isUserAgent(/KTML|Webkit/i) && property == 'margin-right' &&
-			    computedStyle.getPropertyValue('float') == 'none')
-//[TODO] is there a quicker way than float: left?
-				return parseFloat(Utils.swapStyles(this.element, {'float': 'left'}, Utils.bind(function () {
-					return this.view.getComputedStyle(this.element, null).getPropertyValue(property);
-				}, this)));
-			// return computed style value
-			return parseFloat(computedStyle.getPropertyValue(property));
-		}
-		else if (this.element.currentStyle) {
-			// getComputedStyle emulation for IE (courtesy Dean Edwards)
-			var currentVal = Utils.getStyleProperty(this.element.currentStyle, property);
-			if (property.match(/^(width|height)$/))
-				return this._shiftDimension(this.getBoxDimension('padding', {width: 'horizontal', height: 'vertical'}[property]), 'padding', false);
-			if (/^\-?\d+(px)?$/i.test(currentVal) || currentVal == 'none')
-				return parseFloat(currentVal) || 0;
-			if (property.match(/^border/) && !(/^\-\d+/.test(currentVal))) { // border word-values
-				var runtimeStyleVal = this.element.runtimeStyle.borderTopWidth;
-				this.element.runtimeStyle.borderTopWidth = currentVal;
-				var value = this.element.clientTop;
-				this.element.runtimeStyle.borderTopWidth = runtimeStyleVal;
-			} else { // length values
-				var runtimeStyleVal = this.element.runtimeStyle.left;
-				var styleVal = this.element.style.left;
-				this.element.runtimeStyle.left = this.element.currentStyle.left;
-				this.element.style.left = currentVal || 0;
-				var value = this.element.style.pixelLeft;
-				this.element.style.left = styleVal;
-				this.element.runtimeStyle.left = runtimeStyleVal;
-			}
-			return value;
-		}
-		throw new Error('Cannot get computed element style.');
-	},
-	setCSSLength: function (property, length) {
-		property = this._normalizeProperty(property);
-		Utils.setStyleProperty(this.element.style, property, length + 'px');
-	},
-	resetCSSLength: function (property) {
-		property = this._normalizeProperty(property);
-		Utils.removeStyleProperty(this.element.style, property);
-	},
-	_normalizeProperty: function (property) {
-		return property.replace(/^(border-[a-z]+)$/, '$1-width');
-	},
-	isContentBoxDimensionAuto: function (axis) {
-		// auto will not expand offset dimension with padding
-		var temp = Utils.getStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis]);
-		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '1px');
-		var dimension = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]];
-		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '2px');
-		var flag = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]] == dimension;
-		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
-		return flag;
-	}
-}, {
-	AXIS_DIMENSION: {vertical: 'height', horizontal: 'width'},
-	AXIS_DIMENSION_UP: {vertical: 'Height', horizontal: 'Width'},
-	AXIS_TL: {vertical: 'top', horizontal: 'left'},
-	AXIS_BR: {vertical: 'bottom', horizontal: 'right'}
-});
-
-//----------------------------------------------------------------------
 // node user data manager
 //----------------------------------------------------------------------
 
@@ -295,7 +296,7 @@ var OrientationManager = Structure.extend({
 		this.body = document.getElementsByTagName('body')[0];
 		
 		// add orientation styles
-		Utils.addStylesheet(document, [
+		CSSUtils.addStylesheet(document, [
 //[TODO] child selector would be so nice here
 			'.orientation-horizontal { overflow: hidden; }',
 			'.orientation-horizontal-child { float: left; }',
@@ -312,7 +313,7 @@ var OrientationManager = Structure.extend({
 		// initialize
 		var parent = new OrientationBox(element);
 		// validate element
-		if (!Utils.isAncestorOf(this.body, element))
+		if (!DOMUtils.isAncestorOf(this.body, element))
 			throw new Error('Only descendants of the body element can have orientation.');
 		// set orientation
 		parent.setOrientation(axis == 'horizontal' ? axis : 'vertical');
@@ -327,14 +328,12 @@ var OrientationManager = Structure.extend({
 var LayoutBase = Structure.extend({
 	document: null,
 	element: null,
-	box: null,
 	data: null,
 	constructor: function (element) {
-		if (!element || element.nodeType != 1)
+		if (!DOMUtils.isElement(element))
 			throw new Error('Invalid DOM element supplied.');
 		this.element = element;
-		this.document = Utils.getOwnerDocument(element);
-		this.box = new CSSBox(element);
+		this.document = DOMUtils.getOwnerDocument(element);
 		this.data = new NodeUserData(element, 'layout');
 	}
 });
@@ -358,30 +357,30 @@ var OrientationBox = LayoutBase.extend({
 		// manipulate widths and classes
 		if (axis == 'horizontal') {
 			// expand box size to contain floats without wrapping
-			if (this.box.isContentBoxDimensionAuto(axis)) {
-				this.box.setCSSLength('width', this.getContentSize());
+			if (BoxUtils.isContentBoxDimensionAuto(this.element, axis)) {
+				BoxUtils.setCSSLength(this.element, 'width', this.getContentSize());
 				this.data.set('container-horizontal-shrink', true);
 			}
 			// add class
-			Utils.addClass(this.element, 'orientation-horizontal');
+			CSSUtils.addClass(this.element, 'orientation-horizontal');
 		} else {
 			// remove styles
 			if (this.data.get('container-horizontal-shrink')) {
-				this.box.resetCSSLength('width');
+				BoxUtils.resetCSSLength(this.element, 'width');
 				this.data.set('container-horizontal-shrink', false);
 			}
 			// remove class
-			Utils.removeClass(this.element, 'orientation-horizontal');
+			CSSUtils.removeClass(this.element, 'orientation-horizontal');
 		}
 	},
 	
 	sanitizeChildren: function () {
 		// horizontal orientation requires only elements can be children
 		for (var i = 0, child; child = this.element.childNodes[i]; i++) {
-			if (child.nodeType == 3 && !Utils.isWhitespaceNode(child)) {
+			if (child.nodeType == 3 && !DOMUtils.isWhitespaceNode(child)) {
 				// wrap text nodes in span elements
 				var wrap = this.document.createElement('span');
-				Utils.addClass(wrap, 'orientation-text');
+				CSSUtils.addClass(wrap, 'orientation-text');
 				child.parentNode.replaceChild(wrap, child);
 				wrap.appendChild(child);
 			} else if (child.nodeType != 1) {
@@ -397,19 +396,19 @@ var OrientationBox = LayoutBase.extend({
 	getContentSize: function () {
 		if (this.getOrientation() == 'vertical') {
 			// get vertical size by differing offsets of an anchor at start and end of content
-			var anchor = this.document.createElement('span'), box = new CSSBox(anchor);
-			Utils.setStyleProperty(anchor.style, 'block');
+			var anchor = this.document.createElement('span');
+			CSSUtils.setStyleProperty(anchor.style, 'block');
 			this.element.appendChild(anchor);
-			var size = box._getRoughOffset().y;
+			var size = BoxUtils.getRelativeOffset(anchor).y;
 			this.element.insertBefore(anchor, this.element.firstChild);
-			size -= box._getRoughOffset().y;
+			size -= BoxUtils.getRelativeOffset(anchor).y;
 			this.element.removeChild(anchor);
 			return size;
 		} else {
 			// get horizontal size by adding box dimensions (slow)
 			for (var size = 0, child = this.element.firstChild; child; child = child.nextSibling)
 				if (child.nodeType == 1)
-					size += (new CSSBox(child)).getBoxDimension('margin', 'horizontal');
+					size += BoxUtils.getBoxDimension(child, 'margin', 'horizontal');
 			return size;
 		}
 	}
@@ -420,20 +419,20 @@ var OrientationBoxChild = LayoutBase.extend({
 		// manipulate widths and classes
 		if (axis == 'horizontal') {
 			// if box doesn't have fixed with, shrink horizontally
-			if (this.box.isContentBoxDimensionAuto(axis)) {
-				this.box.setCSSLength('width', this.getMinContentWidth());
+			if (BoxUtils.isContentBoxDimensionAuto(this.element, axis)) {
+				BoxUtils.setCSSLength(this.element, 'width', this.getMinContentWidth());
 				this.data.set('horizontal-shrink', true);
 			}			
 			// add class
-			Utils.addClass(this.element, 'orientation-horizontal-child');
+			CSSUtils.addClass(this.element, 'orientation-horizontal-child');
 		} else {
 			// undo horizontal shrinkage
 			if (this.data.get('horizontal-shrink')) {
-				this.box.resetCSSLength('width');
+				BoxUtils.resetCSSLength(this.element, 'width');
 				this.data.set('horizontal-shrink', false)
 			}			
 			// remove class
-			Utils.removeClass(this.element, 'orientation-horizontal-child');
+			CSSUtils.removeClass(this.element, 'orientation-horizontal-child');
 		}
 	},
 
@@ -443,14 +442,14 @@ var OrientationBoxChild = LayoutBase.extend({
 		// min/max-content width for browser that support the CSS property
 		//[NOTE] in theory safari supports '(min-)intrinsic', but it's not equivalent
 		if (Utils.isUserAgent(/Gecko\//i)) {
-			return Utils.swapStyles(this.element, {width: '-moz-min-content'}, Utils.bind(function () {
-				return this.box.getBoxDimension('content', 'horizontal');
+			return CSSUtils.swapStyles(this.element, {width: '-moz-min-content'}, Utils.bind(function () {
+				return BoxUtils.getBoxDimension(this.element, 'content', 'horizontal');
 			}, this));
 		}
 	
 		//[FIX] Safari doesn't like dimensions of '0'
-		return Utils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, Utils.bind(function () {
-			return this.box._shiftDimension(this.element.scrollWidth, 'horizontal', 'padding', false);
+		return CSSUtils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, Utils.bind(function () {
+			return BoxUtils._shiftDimension(this.element, this.element.scrollWidth, 'horizontal', 'padding', false);
 		}, this));
 	}
 });
@@ -528,10 +527,10 @@ var LayoutManager = OrientationManager.extend({
 		if (!root || root.nodeType != 1)
 			throw new Error('Layout manager root must be an element.');
 		// orientation manager constructor
-		OrientationManager.call(this, Utils.getOwnerDocument(root));
+		OrientationManager.call(this, DOMUtils.getOwnerDocument(root));
 		
 		// check root position
-		if (!Utils.isAncestorOf(this.body, root) && root != this.body)
+		if (!DOMUtils.isAncestorOf(this.body, root) && root != this.body)
 			throw new Error('Root node must be a descendant of the body element or the body itself.');
 		
 		// create resize listener
@@ -556,7 +555,7 @@ var LayoutManager = OrientationManager.extend({
 		// initialize
 		var box = new LayoutBoxChild(element);
 		// validate element
-		if (!Utils.isAncestorOf(this.root, element))
+		if (!DOMUtils.isAncestorOf(this.root, element))
 			throw new Error('Flexible elements must be descendants of the root node.');
 			
 		// normalize properties and get axis
@@ -646,12 +645,8 @@ var LayoutBox = OrientationBox.extend({
 		return this.children[axis].length > 0;
 	},
 	
-	updateDivisor: function (axis) {
-		// set flexible properties
-		var divisor = 0;
-		for (var children = this.children[axis], i = 0; i < children.length; i++)
-			divisor += children[i].data.get('divisor-' + axis);
-		this.data.set('container-divisor-' + axis, divisor);
+	updateDivisor: function (axis, delta) {
+		this.data.set('container-divisor-' + axis, (this.data.get('container-divisor-' + axis) || 0) + delta);
 	},
 
 	resetContainerLayout: function (axis) {
@@ -671,7 +666,7 @@ var LayoutBox = OrientationBox.extend({
 		var contentSize, contentBoxSize, divisor, oldFlexUnit, newFlexUnit;
 		// get content box size (actual, or desired by flex)
 		contentBoxSize = this.data.has('content-size-cache-' + axis) ?
-		    this.data.get('content-size-cache-' + axis) : this.box.getBoxDimension('content', axis);
+		    this.data.get('content-size-cache-' + axis) : BoxUtils.getBoxDimension(this.element, 'content', axis);
 			
 		// calculate flex unit (with flow)
 		if (axis == this.getOrientation()) {
@@ -682,7 +677,7 @@ var LayoutBox = OrientationBox.extend({
 			// content box dimensions may be larger than flex unit; subtract from content size
 			for (var children = this.children[axis], i = 0; i < children.length; i++)
 				if (children[i].hasFlexibleProperty(axis, AXIS_DIMENSION[axis]))
-					contentSize -= children[i].box.getBoxDimension('content', axis) -
+					contentSize -= BoxUtils.getBoxDimension(children[i].element, 'content', axis) -
 					    (oldFlexUnit * children[i].getFlexibleProperty(axis, AXIS_DIMENSION[axis]));
 		}
 		
@@ -690,12 +685,12 @@ var LayoutBox = OrientationBox.extend({
 		for (var children = this.children[axis], i = 0; i < children.length; i++) {
 			// calculate flex unit (against flow)
 			if (axis != this.getOrientation()) {
-				contentSize = children[i].box.getBoxDimension('margin', axis);
+				contentSize = BoxUtils.getBoxDimension(children[i].element, 'margin', axis);
 				divisor = children[i].data.get('divisor-' + axis);
 				oldFlexUnit = children[i].data.get('unit-' + axis);
 				// content box dimensions may be larger than flex unit; subtract from content size
 				if (children[i].hasFlexibleProperty(axis, AXIS_DIMENSION[axis]))
-					contentSize -= children[i].box.getBoxDimension('content', axis) -
+					contentSize -= BoxUtils.getBoxDimension(children[i].element, 'content', axis) -
 					    (oldFlexUnit * children[i].getFlexibleProperty(axis, AXIS_DIMENSION[axis]));
 			}
 			
@@ -724,26 +719,25 @@ var LayoutBoxChild = LayoutBase.extend({
 	},
 	
 	setFlexibleProperty: function (axis, property, value) {
+		// get divisor delta
 		this.data.ensure('properties-' + axis, {});
+		var delta = value - (this.getFlexibleProperty(axis, property) || 0);
+		// update divisors
+		this.updateDivisor(axis, delta);
+		(new LayoutBox(this.element.parentNode)).updateDivisor(axis, delta);
+		// set property
 		this.data.get('properties-' + axis)[property] = value;
-		// reset flex count
-		this.updateDivisor(axis);
-		(new LayoutBox(this.element.parentNode)).updateDivisor(axis);
 		
 		//[FIX] for dimensions, we must be using content-box sizing
 		if (property.match(/^(height|width)$/)) {
-			Utils.setStyleProperty(this.element.style, 'box-sizing', 'content-box');
-			Utils.setStyleProperty(this.element.style, '-moz-box-sizing', 'content-box');
-			Utils.setStyleProperty(this.element.style, '-webkit-box-sizing', 'content-box');
+			CSSUtils.setStyleProperty(this.element.style, 'box-sizing', 'content-box');
+			CSSUtils.setStyleProperty(this.element.style, '-moz-box-sizing', 'content-box');
+			CSSUtils.setStyleProperty(this.element.style, '-webkit-box-sizing', 'content-box');
 		}
 	},
-
-	updateDivisor: function (axis) {
-		// set flexible properties
-		var properties = this.data.get('properties-' + axis) || {}, divisor = 0;
-		for (var prop in properties)
-			divisor += properties[prop];
-		this.data.set('divisor-' + axis, divisor);
+	
+	updateDivisor: function (axis, delta) {
+		this.data.set('divisor-' + axis, (this.data.get('divisor-' + axis) || 0) + delta);
 	},
 	
 	isFlexibleAlongAxis: function (axis) {
@@ -754,7 +748,7 @@ var LayoutBoxChild = LayoutBase.extend({
 		// set flexible properties
 		var properties = this.data.get('properties-' + axis) || {};
 		for (var prop in properties)
-			this.box.setCSSLength((prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop]);
+			BoxUtils.setCSSLength(this.element, (prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop]);
 		if (prop.match(/^(width|height)$/))
 			this.data.set('content-size-cache-' + axis, unit * properties[prop]);
 	}
@@ -766,8 +760,8 @@ var FullLayoutManager = LayoutManager.extend({
 	constructor: function (document, overflow) {
 		// make document elements full-page
 		var html = document.documentElement, body = document.getElementsByTagName('body')[0];
-		Utils.setStyles(html, {height: '100%', width: '100%', margin: 0, border: 'none', padding: 0, overflow: overflow || 'hidden'});
-		Utils.setStyles(body, {height: '100%', width: '100%', margin: 0, border: 'none', padding: 0, overflow: 'visible'});
+		CSSUtils.setStyles(html, {height: '100%', width: '100%', margin: 0, border: 'none', padding: 0, overflow: overflow || 'hidden'});
+		CSSUtils.setStyles(body, {height: '100%', width: '100%', margin: 0, border: 'none', padding: 0, overflow: 'visible'});
 
 		// construct manager
 		LayoutManager.call(this, body);

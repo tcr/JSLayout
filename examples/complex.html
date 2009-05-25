@@ -4,12 +4,6 @@
 <head>
 <title>Flexify</title>
 
-<script src="http://base2.googlecode.com/svn/version/1.0/src/base2.js"></script>
-<script src="http://base2.googlecode.com/svn/version/1.0/src/base2-dom.js"></script>
-<script src="layout/orientation.js"></script>
-<link href="layout/orientation.css" rel="stylesheet">
-<script src="layout/layout.js"></script>
-
 <style>
 label {
 display: block;
@@ -36,32 +30,33 @@ fieldset {
 }
 </style>
 
+<!--
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+-->
+
+<script src="../layout.js"></script>
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
+
 <script>
 
-// main script
-new function () {
-	eval(base2.namespace);
-
-	// loader
-	DOM.bind(document);
-	document.addEventListener('DOMContentLoaded', function () {
-		var layout = new FullLayoutManager(document, 'scroll');
-		document.querySelectorAll('.horizontal').forEach(function (element) {
-			layout.setOrientation(element, 'horizontal');
-		});
-		document.querySelectorAll('#bottom, #apples, textarea, .c').forEach(function (element) {
-			layout.setFlexibleProperty(element, 'height');
-		});
-		document.querySelectorAll('input[type="text"], .c, textarea, .fullwidth').forEach(function (element) {
-			layout.setFlexibleProperty(element, 'width');
-		});
-		document.querySelectorAll('.centered').forEach(function (element) {
-			layout.setFlexibleProperty(element, 'margin-left');
-			layout.setFlexibleProperty(element, 'margin-right');
-		});
-		layout.recalculate();
-	}, false);
-};
+onContent(function () {
+	var layout = new FullLayoutManager(document, 'scroll');
+	Sizzle('.horizontal').forEach(function (element) {
+		layout.setOrientation(element, 'horizontal');
+	});
+	Sizzle('#bottom, #apples, textarea, .c').forEach(function (element) {
+		layout.setFlexibleProperty(element, 'height');
+	});
+	Sizzle('input[type="text"], .c, textarea, .fullwidth').forEach(function (element) {
+		layout.setFlexibleProperty(element, 'width');
+	});
+	Sizzle('.centered').forEach(function (element) {
+		layout.setFlexibleProperty(element, 'margin-left');
+		layout.setFlexibleProperty(element, 'margin-right');
+	});
+	layout.calculate();
+});
 
 </script>
 
