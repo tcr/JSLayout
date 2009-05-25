@@ -10,14 +10,14 @@ var LayoutStyler = Structure.extend({
 	applyStyleBySelector: function (selector, style) {
 		// orientation
 		if ('orientation' in style && String(style.orientation).match(/^(vertical|horizontal)$/))
-			this.document.querySelectorAll(selector).forEach(bind(function (element) {
+			this.document.querySelectorAll(selector).forEach(Utils.bind(function (element) {
 				this.setOrientation(element, style.orientation);
 			}, this));
 		// layout property
 //		if (LayoutManager.is(this.manager))
 			for (var property in style)
 				if (this.manager.getPropertyAxis(this.normalizeProperty(property)))
-					forEach(Sizzle(selector, this.manager.document), bind(function (element) {
+					forEach(Sizzle(selector, this.manager.document), Utils.bind(function (element) {
 						this.manager.setFlexibleProperty(element, property, style[property]);
 					}, this));
 	},

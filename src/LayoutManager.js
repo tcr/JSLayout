@@ -10,15 +10,15 @@ var LayoutManager = OrientationManager.extend({
 		if (!root || root.nodeType != 1)
 			throw new Error('Layout manager root must be an element.');
 		// orientation manager constructor
-		OrientationManager.call(this, DOMUtils.getOwnerDocument(root));
+		OrientationManager.call(this, Utils.getOwnerDocument(root));
 		
 		// check root position
-		if (!DOMUtils.contains(this.body, root) && root != this.body)
+		if (!Utils.contains(this.body, root) && root != this.body)
 			throw new Error('Root node must be a descendant of the body element or the body itself.');
 		
 		// create resize listener
 		var observer = new ResizeObserver(root);
-		observer.addListener(bind(this.recalculate, this));
+		observer.addListener(Utils.bind(this.recalculate, this));
 	},
 
 	getFlexibleProperty: function (element, property) {
@@ -38,7 +38,7 @@ var LayoutManager = OrientationManager.extend({
 		// initialize
 		var box = new LayoutBoxChild(element);
 		// validate element
-		if (!DOMUtils.contains(this.root, element))
+		if (!Utils.contains(this.root, element))
 			throw new Error('Flexible elements must be descendants of the root node.');
 			
 		// normalize properties and get axis
@@ -77,7 +77,7 @@ var LayoutManager = OrientationManager.extend({
 		// reset layout (in horizontal, vertical order)
 		for (var axis in {horizontal: true, vertical: true})
 			ElementTraversal.traverse(this.root, {
-				ascend: bind(function (parentNode) {
+				ascend: Utils.bind(function (parentNode) {
 					// reset/equalize nodes
 					var parent = new LayoutBox(parentNode, this);
 					if (parent.hasFlexibleChildren(axis))
@@ -94,7 +94,7 @@ var LayoutManager = OrientationManager.extend({
 		// recalculate layout (in horizontal, vertical order)
 		for (var axis in {horizontal: true, vertical: true})
 			ElementTraversal.traverse(this.root, {
-				descend: bind(function (parentNode) {
+				descend: Utils.bind(function (parentNode) {
 					// expand nodes
 					var parent = new LayoutBox(parentNode, this);
 					if (parent.hasFlexibleChildren(axis))

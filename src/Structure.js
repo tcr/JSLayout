@@ -37,8 +37,3 @@ Structure.extend = function (p, s) {
 	// return new factory object			
 	return Factory;
 };
-
-//[TODO] move this into Utils?
-function bind(fn, context) {
-        return function () { return fn.apply(context, arguments ); };
-}

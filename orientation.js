@@ -6,7 +6,86 @@
 new function(_) {
 
 
-//------------------------------------------------------------------------------
+//----------------------------------------------------------------------
+// Misc. utilities
+//----------------------------------------------------------------------
+
+var Utils = {
+	// node manipulation
+	getOwnerDocument: function (node) {
+		return node.ownerDocument || node.document;
+	},
+	contains: function (parent, descendant) {
+		parent.nodeType && descendant.nodeType;
+		if (parent.compareDocumentPosition)
+			return !!(parent.compareDocumentPosition(descendant) & 16);
+		if (parent.contains)
+			return parent != descendant && parent.contains(descendant);
+		while (descendant && (descendant = descendant.parentNode) && parent != descendant)
+			continue;
+		return !!descendant;
+	},
+	
+	// style object manipulation
+	_toCamelCase: function (property) {
+		return property.replace(/\-([a-z])/g, function (string, letter) { return letter.toUpperCase(); });
+	},
+	getStyleProperty: function (style, prop) {
+		return style.getPropertyValue ? style.getPropertyValue(prop) : style[Utils._toCamelCase(prop)];
+	},
+	setStyleProperty: function (style, prop, val) {
+		style.setProperty ? style.setProperty(prop, val, null) : style[Utils._toCamelCase(prop)] = val;
+	},
+	removeStyleProperty: function (style, prop) {
+		style.removeProperty ? style.removeProperty(prop) : style[Utils._toCamelCase(prop)] = '';
+	},
+	
+	// style manipulation functions
+	//[TODO] support non-camel-case, maybe
+	swapStyles: function (element, tempStyles, callback) {
+		var curStyles = {};
+		for (var prop in tempStyles)
+			curStyles[prop] = Utils.getStyleProperty(element.style, prop);
+		Utils.setStyles(element, tempStyles);
+		var ret = callback(element);
+		Utils.setStyles(element, curStyles);
+		return ret;
+	},
+	setStyles: function (element, styles) {
+		for (var prop in styles)
+			Utils.setStyleProperty(element.style, prop, styles[prop]);
+	},
+	addStylesheet: function (document, css) {
+		var head = document.getElementsByTagName('head')[0] ||
+		    document.documentElement.appendChild(document.createElement('head'));
+		var style = head.appendChild(document.createElement('style'));
+		document.styleSheets[0].cssText ?
+		    document.styleSheets[document.styleSheets.length - 1].cssText = css :
+		    style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = css;
+	},
+
+	// class attribute manipulation
+	addClass: function (element, className) {
+		Utils.removeClass(element, className);
+		element.className += ' ' + className;
+	},
+	removeClass: function (element, className) {
+		element.className = (' ' + (element.className || '') + ' ').replace(' ' + className + ' ', ' ');
+	},
+	hasClass: function (element, className) {
+		return (' ' + (element.className || '') + ' ').indexOf(' ' + className + ' ') != -1;
+	},
+	
+	// UA detection
+	isUserAgent: function (regexp) {
+		return regexp.test(navigator.userAgent);
+	},
+	
+	// function binding
+	bind: function (fn, context) {
+		return function () { return fn.apply(context, arguments ); };
+	}
+};//------------------------------------------------------------------------------
 // JavaScript Inheritance
 //------------------------------------------------------------------------------
 
@@ -44,86 +123,6 @@ Structure.extend = function (p, s) {
 	
 	// return new factory object			
 	return Factory;
-};
-
-//[TODO] move this into Utils?
-function bind(fn, context) {
-        return function () { return fn.apply(context, arguments ); };
-}//----------------------------------------------------------------------
-// DOM utilities
-//----------------------------------------------------------------------
-
-// DOMUtils vs. CSSUtils vs. Utils?
-var DOMUtils = {
-	// node manipulation
-	getOwnerDocument: function (node) {
-		return node.ownerDocument || node.document;
-	},
-	contains: function (parent, descendant) {
-		parent.nodeType && descendant.nodeType;
-		if (parent.compareDocumentPosition)
-			return !!(parent.compareDocumentPosition(descendant) & 16);
-		if (parent.contains)
-			return parent != descendant && parent.contains(descendant);
-		while (descendant && (descendant = descendant.parentNode) && parent != descendant)
-			continue;
-		return !!descendant;
-	},
-	
-	// style object manipulation
-	_toCamelCase: function (property) {
-		return property.replace(/\-([a-z])/g, function (string, letter) { return letter.toUpperCase(); });
-	},
-	getStyleProperty: function (style, prop) {
-		return style.getPropertyValue ? style.getPropertyValue(prop) : style[DOMUtils._toCamelCase(prop)];
-	},
-	setStyleProperty: function (style, prop, val) {
-		style.setProperty ? style.setProperty(prop, val, null) : style[DOMUtils._toCamelCase(prop)] = val;
-	},
-	removeStyleProperty: function (style, prop) {
-		style.removeProperty ? style.removeProperty(prop) : style[DOMUtils._toCamelCase(prop)] = '';
-	},
-	
-	// style manipulation functions
-	//[TODO] support non-camel-case, maybe
-	swapStyles: function (element, tempStyles, callback) {
-		var curStyles = {};
-		for (var prop in tempStyles)
-			curStyles[prop] = DOMUtils.getStyleProperty(element.style, prop);
-		DOMUtils.setStyles(element, tempStyles);
-		var ret = callback(element);
-		DOMUtils.setStyles(element, curStyles);
-		return ret;
-	},
-	setStyles: function (element, styles) {
-		for (var prop in styles)
-			DOMUtils.setStyleProperty(element.style, prop, styles[prop]);
-	},
-	addStylesheet: function (document, css) {
-		var head = document.getElementsByTagName('head')[0] ||
-		    document.documentElement.appendChild(document.createElement('head'));
-		var style = head.appendChild(document.createElement('style'));
-		document.styleSheets[0].cssText ?
-		    document.styleSheets[document.styleSheets.length - 1].cssText = css :
-		    style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = css;
-	},
-
-	// class attribute manipulation
-	addClass: function (element, className) {
-		DOMUtils.removeClass(element, className);
-		element.className += ' ' + className;
-	},
-	removeClass: function (element, className) {
-		element.className = (' ' + (element.className || '') + ' ').replace(' ' + className + ' ', ' ');
-	},
-	hasClass: function (element, className) {
-		return (' ' + (element.className || '') + ' ').indexOf(' ' + className + ' ') != -1;
-	},
-	
-	// detection class
-	isUserAgent: function (regexp) {
-		return regexp.test(navigator.userAgent);
-	}
 };//----------------------------------------------------------------------
 // CSS Box
 //----------------------------------------------------------------------
@@ -133,7 +132,7 @@ var CSSBox = Structure.extend({
 		if (!element || element.nodeType !== 1)
 			throw new Error('Invalid DOM element supplied.');
 		this.element = element;
-		this.view = DOMUtils.getOwnerDocument(element).defaultView || window;
+		this.view = Utils.getOwnerDocument(element).defaultView || window;
 	},
 	_getRoughOffset: function () {
 		if (this.element.getBoundingClientRect) {
@@ -165,10 +164,10 @@ var CSSBox = Structure.extend({
 		if (this.view.getComputedStyle) {
 			var computedStyle = this.view.getComputedStyle(this.element, null);
 			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
-			if (DOMUtils.isUserAgent(/KTML|Webkit/i) && property == 'margin-right' &&
+			if (Utils.isUserAgent(/KTML|Webkit/i) && property == 'margin-right' &&
 			    computedStyle.getPropertyValue('float') == 'none')
 //[TODO] is there a quicker way than float: left?
-				return parseFloat(DOMUtils.swapStyles(this.element, {'float': 'left'}, bind(function () {
+				return parseFloat(Utils.swapStyles(this.element, {'float': 'left'}, Utils.bind(function () {
 					return this.view.getComputedStyle(this.element, null).getPropertyValue(property);
 				}, this)));
 			// return computed style value
@@ -176,7 +175,7 @@ var CSSBox = Structure.extend({
 		}
 		else if (this.element.currentStyle) {
 			// getComputedStyle emulation for IE (courtesy Dean Edwards)
-			var currentVal = DOMUtils.getStyleProperty(this.element.currentStyle, property);
+			var currentVal = Utils.getStyleProperty(this.element.currentStyle, property);
 			if (property.match(/^(width|height)$/))
 				return this._shiftDimension(this.getBoxDimension('padding', {width: 'horizontal', height: 'vertical'}[property]), 'padding', false);
 			if (/^\-?\d+(px)?$/i.test(currentVal) || currentVal == 'none')
@@ -201,23 +200,23 @@ var CSSBox = Structure.extend({
 	},
 	setCSSLength: function (property, length) {
 		property = this._normalizeProperty(property);
-		DOMUtils.setStyleProperty(this.element.style, property, length + 'px');
+		Utils.setStyleProperty(this.element.style, property, length + 'px');
 	},
 	resetCSSLength: function (property) {
 		property = this._normalizeProperty(property);
-		DOMUtils.removeStyleProperty(this.element.style, property);
+		Utils.removeStyleProperty(this.element.style, property);
 	},
 	_normalizeProperty: function (property) {
 		return property.replace(/^(border-[a-z]+)$/, '$1-width');
 	},
 	isContentBoxDimensionAuto: function (axis) {
 		// auto will not expand offset dimension with padding
-		var temp = DOMUtils.getStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis]);
-		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '0px');
+		var temp = Utils.getStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis]);
+		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '0px');
 		var dimension = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]];
-		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '1px');
+		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '1px');
 		var flag = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]] == dimension;
-		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
+		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
 		return flag;
 	}
 }, {
@@ -294,7 +293,7 @@ var OrientationManager = Structure.extend({
 		this.body = document.getElementsByTagName('body')[0];
 		
 		// add orientation styles
-		DOMUtils.addStylesheet(document, [
+		Utils.addStylesheet(document, [
 			'.orientation-horizontal { overflow: hidden; width: 0; }',
 			'.orientation-horizontal-child { float: left; width: 0; }',
 		    ].join('\n'));
@@ -310,7 +309,7 @@ var OrientationManager = Structure.extend({
 		// initialize
 		var parent = new OrientationBox(element);
 		// validate element
-		if (!DOMUtils.contains(this.body, element))
+		if (!Utils.contains(this.body, element))
 			throw new Error('Only descendants of the body element can have orientation.');
 		// set orientation
 		parent.setOrientation(axis == 'horizontal' ? axis : 'vertical');
@@ -331,7 +330,7 @@ var LayoutBase = Structure.extend({
 		if (!element || element.nodeType != 1)
 			throw new Error('Invalid DOM element supplied.');
 		this.element = element;
-		this.document = DOMUtils.getOwnerDocument(element);
+		this.document = Utils.getOwnerDocument(element);
 		this.box = new CSSBox(element);
 		this.data = new NodeUserData(element, 'layout');
 	}
@@ -357,12 +356,12 @@ var OrientationBox = LayoutBase.extend({
 		// classes, styles
 		if (axis == 'horizontal') {
 			// add class
-			DOMUtils.addClass(this.element, 'orientation-horizontal');
+			Utils.addClass(this.element, 'orientation-horizontal');
 			// expand box size to contain floats without wrapping
 			this.box.setCSSLength('width', this.getContentSize());
 		} else {
 			// remove class and styles
-			DOMUtils.removeClass(this.element, 'orientation-horizontal');
+			Utils.removeClass(this.element, 'orientation-horizontal');
 			this.box.resetCSSLength('width');
 		}
 	},
@@ -372,7 +371,7 @@ var OrientationBox = LayoutBase.extend({
 		for (var child = this.element.firstChild; child; child = child.nextSibling) {
 			if (child.nodeType == 3) {
 				var wrap = this.document.createElement('span');
-				DOMUtils.addClass(wrap, 'orientation-text');
+				Utils.addClass(wrap, 'orientation-text');
 				child.parentNode.replaceChild(wrap, child);
 				wrap.appendChild(child);
 				child = wrap;
@@ -382,7 +381,7 @@ var OrientationBox = LayoutBase.extend({
 	restoreChildTextNodes: function () {
 		// undo child text node wrapping
 		for (var child = this.element.firstChild; child; child = child.nextSibling) {
-			if (child.nodeType == 1 && DOMUtils.hasClass(child, 'orientation-text')) {
+			if (child.nodeType == 1 && Utils.hasClass(child, 'orientation-text')) {
 				child = child.firstChild;
 				child.parentNode.parentNode.replaceChild(child, child.parentNode);
 			}
@@ -394,7 +393,7 @@ var OrientationBox = LayoutBase.extend({
 	getContentSize: function () {
 		if (this.getOrientation() == 'vertical') {
 			var anchor = this.document.createElement('span'), box = new CSSBox(anchor);
-			DOMUtils.setStyleProperty(anchor.style, 'block');
+			Utils.setStyleProperty(anchor.style, 'block');
 			this.element.appendChild(anchor);
 			var size = box._getRoughOffset().y;
 			this.element.insertBefore(anchor, this.element.firstChild);
@@ -419,7 +418,7 @@ var OrientationBoxChild = LayoutBase.extend({
 			this.data.set('horizontal-shrink', true);
 			
 			// set class
-			DOMUtils.addClass(this.element, 'orientation-horizontal-child');
+			Utils.addClass(this.element, 'orientation-horizontal-child');
 		} else {
 			// undo horizontal shrinkage
 			if (this.data.get('horizontal-shrink'))
@@ -427,7 +426,7 @@ var OrientationBoxChild = LayoutBase.extend({
 			this.data.set('horizontal-shrink', false)
 			
 			// unset class
-			DOMUtils.removeClass(this.element, 'orientation-horizontal-child');
+			Utils.removeClass(this.element, 'orientation-horizontal-child');
 		}
 	},
 
@@ -436,14 +435,14 @@ var OrientationBoxChild = LayoutBase.extend({
 	'getMinContentWidth': function () {
 		// min/max-content width for browser that support the CSS property
 		//[NOTE] in theory safari supports '(min-)intrinsic', but it's not equivalent
-		if (DOMUtils.isUserAgent(/Gecko\//i)) {
-			return DOMUtils.swapStyles(this.element, {width: '-moz-min-content'}, bind(function () {
+		if (Utils.isUserAgent(/Gecko\//i)) {
+			return Utils.swapStyles(this.element, {width: '-moz-min-content'}, Utils.bind(function () {
 				return this.box.getBoxDimension('content', 'horizontal');
 			}, this));
 		}
 	
 		//[FIX] Safari doesn't like dimensions of '0'
-		return DOMUtils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, bind(function () {
+		return Utils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, Utils.bind(function () {
 			return this.box._shiftDimension(this.element.scrollWidth, 'horizontal', 'padding', false);
 		}, this));
 	}

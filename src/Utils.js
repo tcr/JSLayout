@@ -1,9 +1,8 @@
 //----------------------------------------------------------------------
-// DOM utilities
+// Misc. utilities
 //----------------------------------------------------------------------
 
-// DOMUtils vs. CSSUtils vs. Utils?
-var DOMUtils = {
+var Utils = {
 	// node manipulation
 	getOwnerDocument: function (node) {
 		return node.ownerDocument || node.document;
@@ -24,13 +23,13 @@ var DOMUtils = {
 		return property.replace(/\-([a-z])/g, function (string, letter) { return letter.toUpperCase(); });
 	},
 	getStyleProperty: function (style, prop) {
-		return style.getPropertyValue ? style.getPropertyValue(prop) : style[DOMUtils._toCamelCase(prop)];
+		return style.getPropertyValue ? style.getPropertyValue(prop) : style[Utils._toCamelCase(prop)];
 	},
 	setStyleProperty: function (style, prop, val) {
-		style.setProperty ? style.setProperty(prop, val, null) : style[DOMUtils._toCamelCase(prop)] = val;
+		style.setProperty ? style.setProperty(prop, val, null) : style[Utils._toCamelCase(prop)] = val;
 	},
 	removeStyleProperty: function (style, prop) {
-		style.removeProperty ? style.removeProperty(prop) : style[DOMUtils._toCamelCase(prop)] = '';
+		style.removeProperty ? style.removeProperty(prop) : style[Utils._toCamelCase(prop)] = '';
 	},
 	
 	// style manipulation functions
@@ -38,15 +37,15 @@ var DOMUtils = {
 	swapStyles: function (element, tempStyles, callback) {
 		var curStyles = {};
 		for (var prop in tempStyles)
-			curStyles[prop] = DOMUtils.getStyleProperty(element.style, prop);
-		DOMUtils.setStyles(element, tempStyles);
+			curStyles[prop] = Utils.getStyleProperty(element.style, prop);
+		Utils.setStyles(element, tempStyles);
 		var ret = callback(element);
-		DOMUtils.setStyles(element, curStyles);
+		Utils.setStyles(element, curStyles);
 		return ret;
 	},
 	setStyles: function (element, styles) {
 		for (var prop in styles)
-			DOMUtils.setStyleProperty(element.style, prop, styles[prop]);
+			Utils.setStyleProperty(element.style, prop, styles[prop]);
 	},
 	addStylesheet: function (document, css) {
 		var head = document.getElementsByTagName('head')[0] ||
@@ -59,7 +58,7 @@ var DOMUtils = {
 
 	// class attribute manipulation
 	addClass: function (element, className) {
-		DOMUtils.removeClass(element, className);
+		Utils.removeClass(element, className);
 		element.className += ' ' + className;
 	},
 	removeClass: function (element, className) {
@@ -69,8 +68,13 @@ var DOMUtils = {
 		return (' ' + (element.className || '') + ' ').indexOf(' ' + className + ' ') != -1;
 	},
 	
-	// detection class
+	// UA detection
 	isUserAgent: function (regexp) {
 		return regexp.test(navigator.userAgent);
+	},
+	
+	// function binding
+	bind: function (fn, context) {
+		return function () { return fn.apply(context, arguments ); };
 	}
 };

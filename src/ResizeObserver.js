@@ -27,7 +27,7 @@ var ResizeObserver = Structure.extend({
 		this.width = this.element.clientWidth;
 		this.height = this.element.clientHeight;
 		// add timeout
-		setTimeout(bind(this.poll, this), this.timeout);
+		setTimeout(Utils.bind(this.poll, this), this.timeout);
 	},
 	listeners: [],
 	addListener: function (listener) {

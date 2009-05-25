@@ -7,7 +7,7 @@ var CSSBox = Structure.extend({
 		if (!element || element.nodeType !== 1)
 			throw new Error('Invalid DOM element supplied.');
 		this.element = element;
-		this.view = DOMUtils.getOwnerDocument(element).defaultView || window;
+		this.view = Utils.getOwnerDocument(element).defaultView || window;
 	},
 	_getRoughOffset: function () {
 		if (this.element.getBoundingClientRect) {
@@ -39,10 +39,10 @@ var CSSBox = Structure.extend({
 		if (this.view.getComputedStyle) {
 			var computedStyle = this.view.getComputedStyle(this.element, null);
 			//[FIX] safari interprets computed margins weirdly (see Webkit bugs #19828, #13343)
-			if (DOMUtils.isUserAgent(/KTML|Webkit/i) && property == 'margin-right' &&
+			if (Utils.isUserAgent(/KTML|Webkit/i) && property == 'margin-right' &&
 			    computedStyle.getPropertyValue('float') == 'none')
 //[TODO] is there a quicker way than float: left?
-				return parseFloat(DOMUtils.swapStyles(this.element, {'float': 'left'}, bind(function () {
+				return parseFloat(Utils.swapStyles(this.element, {'float': 'left'}, Utils.bind(function () {
 					return this.view.getComputedStyle(this.element, null).getPropertyValue(property);
 				}, this)));
 			// return computed style value
@@ -50,7 +50,7 @@ var CSSBox = Structure.extend({
 		}
 		else if (this.element.currentStyle) {
 			// getComputedStyle emulation for IE (courtesy Dean Edwards)
-			var currentVal = DOMUtils.getStyleProperty(this.element.currentStyle, property);
+			var currentVal = Utils.getStyleProperty(this.element.currentStyle, property);
 			if (property.match(/^(width|height)$/))
 				return this._shiftDimension(this.getBoxDimension('padding', {width: 'horizontal', height: 'vertical'}[property]), 'padding', false);
 			if (/^\-?\d+(px)?$/i.test(currentVal) || currentVal == 'none')
@@ -75,23 +75,23 @@ var CSSBox = Structure.extend({
 	},
 	setCSSLength: function (property, length) {
 		property = this._normalizeProperty(property);
-		DOMUtils.setStyleProperty(this.element.style, property, length + 'px');
+		Utils.setStyleProperty(this.element.style, property, length + 'px');
 	},
 	resetCSSLength: function (property) {
 		property = this._normalizeProperty(property);
-		DOMUtils.removeStyleProperty(this.element.style, property);
+		Utils.removeStyleProperty(this.element.style, property);
 	},
 	_normalizeProperty: function (property) {
 		return property.replace(/^(border-[a-z]+)$/, '$1-width');
 	},
 	isContentBoxDimensionAuto: function (axis) {
 		// auto will not expand offset dimension with padding
-		var temp = DOMUtils.getStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis]);
-		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '0px');
+		var temp = Utils.getStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis]);
+		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '0px');
 		var dimension = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]];
-		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '1px');
+		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '1px');
 		var flag = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]] == dimension;
-		DOMUtils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
+		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
 		return flag;
 	}
 }, {

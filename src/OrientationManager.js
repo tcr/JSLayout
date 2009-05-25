@@ -12,7 +12,7 @@ var OrientationManager = Structure.extend({
 		this.body = document.getElementsByTagName('body')[0];
 		
 		// add orientation styles
-		DOMUtils.addStylesheet(document, [
+		Utils.addStylesheet(document, [
 			'.orientation-horizontal { overflow: hidden; width: 0; }',
 			'.orientation-horizontal-child { float: left; width: 0; }',
 		    ].join('\n'));
@@ -28,7 +28,7 @@ var OrientationManager = Structure.extend({
 		// initialize
 		var parent = new OrientationBox(element);
 		// validate element
-		if (!DOMUtils.contains(this.body, element))
+		if (!Utils.contains(this.body, element))
 			throw new Error('Only descendants of the body element can have orientation.');
 		// set orientation
 		parent.setOrientation(axis == 'horizontal' ? axis : 'vertical');
@@ -49,7 +49,7 @@ var LayoutBase = Structure.extend({
 		if (!element || element.nodeType != 1)
 			throw new Error('Invalid DOM element supplied.');
 		this.element = element;
-		this.document = DOMUtils.getOwnerDocument(element);
+		this.document = Utils.getOwnerDocument(element);
 		this.box = new CSSBox(element);
 		this.data = new NodeUserData(element, 'layout');
 	}
@@ -75,12 +75,12 @@ var OrientationBox = LayoutBase.extend({
 		// classes, styles
 		if (axis == 'horizontal') {
 			// add class
-			DOMUtils.addClass(this.element, 'orientation-horizontal');
+			Utils.addClass(this.element, 'orientation-horizontal');
 			// expand box size to contain floats without wrapping
 			this.box.setCSSLength('width', this.getContentSize());
 		} else {
 			// remove class and styles
-			DOMUtils.removeClass(this.element, 'orientation-horizontal');
+			Utils.removeClass(this.element, 'orientation-horizontal');
 			this.box.resetCSSLength('width');
 		}
 	},
@@ -90,7 +90,7 @@ var OrientationBox = LayoutBase.extend({
 		for (var child = this.element.firstChild; child; child = child.nextSibling) {
 			if (child.nodeType == 3) {
 				var wrap = this.document.createElement('span');
-				DOMUtils.addClass(wrap, 'orientation-text');
+				Utils.addClass(wrap, 'orientation-text');
 				child.parentNode.replaceChild(wrap, child);
 				wrap.appendChild(child);
 				child = wrap;
@@ -100,7 +100,7 @@ var OrientationBox = LayoutBase.extend({
 	restoreChildTextNodes: function () {
 		// undo child text node wrapping
 		for (var child = this.element.firstChild; child; child = child.nextSibling) {
-			if (child.nodeType == 1 && DOMUtils.hasClass(child, 'orientation-text')) {
+			if (child.nodeType == 1 && Utils.hasClass(child, 'orientation-text')) {
 				child = child.firstChild;
 				child.parentNode.parentNode.replaceChild(child, child.parentNode);
 			}
@@ -112,7 +112,7 @@ var OrientationBox = LayoutBase.extend({
 	getContentSize: function () {
 		if (this.getOrientation() == 'vertical') {
 			var anchor = this.document.createElement('span'), box = new CSSBox(anchor);
-			DOMUtils.setStyleProperty(anchor.style, 'block');
+			Utils.setStyleProperty(anchor.style, 'block');
 			this.element.appendChild(anchor);
 			var size = box._getRoughOffset().y;
 			this.element.insertBefore(anchor, this.element.firstChild);
@@ -137,7 +137,7 @@ var OrientationBoxChild = LayoutBase.extend({
 			this.data.set('horizontal-shrink', true);
 			
 			// set class
-			DOMUtils.addClass(this.element, 'orientation-horizontal-child');
+			Utils.addClass(this.element, 'orientation-horizontal-child');
 		} else {
 			// undo horizontal shrinkage
 			if (this.data.get('horizontal-shrink'))
@@ -145,7 +145,7 @@ var OrientationBoxChild = LayoutBase.extend({
 			this.data.set('horizontal-shrink', false)
 			
 			// unset class
-			DOMUtils.removeClass(this.element, 'orientation-horizontal-child');
+			Utils.removeClass(this.element, 'orientation-horizontal-child');
 		}
 	},
 
@@ -154,14 +154,14 @@ var OrientationBoxChild = LayoutBase.extend({
 	'getMinContentWidth': function () {
 		// min/max-content width for browser that support the CSS property
 		//[NOTE] in theory safari supports '(min-)intrinsic', but it's not equivalent
-		if (DOMUtils.isUserAgent(/Gecko\//i)) {
-			return DOMUtils.swapStyles(this.element, {width: '-moz-min-content'}, bind(function () {
+		if (Utils.isUserAgent(/Gecko\//i)) {
+			return Utils.swapStyles(this.element, {width: '-moz-min-content'}, Utils.bind(function () {
 				return this.box.getBoxDimension('content', 'horizontal');
 			}, this));
 		}
 	
 		//[FIX] Safari doesn't like dimensions of '0'
-		return DOMUtils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, bind(function () {
+		return Utils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, Utils.bind(function () {
 			return this.box._shiftDimension(this.element.scrollWidth, 'horizontal', 'padding', false);
 		}, this));
 	}
