@@ -10,7 +10,7 @@ var LayoutManager = OrientationManager.extend({
 		if (!root || root.nodeType != 1)
 			throw new Error('Layout manager root must be an element.');
 		// orientation manager constructor
-		this.base(DOMUtils.getOwnerDocument(root));
+		OrientationManager.call(this, DOMUtils.getOwnerDocument(root));
 		
 		// check root position
 		if (!DOMUtils.contains(this.body, root) && root != this.body)
@@ -112,7 +112,7 @@ var LayoutBox = OrientationBox.extend({
 	children: null,
 	constructor: function () {
 		// construct layout box
-		this.base.apply(this, arguments);
+		OrientationBox.apply(this, arguments);
 		
 		// find flexible children (assume this doesn't expire for the lifespan on the object)
 		this.children = {horizontal: [], vertical: []};

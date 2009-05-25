@@ -4,7 +4,7 @@
 
 // element resize polling function (can't trust window.resize cross-browser)
 
-var ResizeObserver = Base.extend({
+var ResizeObserver = Structure.extend({
 	constructor: function (element, timeout) {
 		this.element = element;
 		this.timeout = timeout || 25;

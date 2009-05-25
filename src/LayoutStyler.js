@@ -2,7 +2,7 @@
 // Layout Styler
 //----------------------------------------------------------------------
 
-var LayoutStyler = Base.extend({
+var LayoutStyler = Structure.extend({
 	manager: null,
 	constructor: function (manager) {
 		this.manager = manager;

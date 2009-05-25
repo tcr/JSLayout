@@ -2,7 +2,7 @@
 // CSS Box
 //----------------------------------------------------------------------
 
-var CSSBox = Base.extend({
+var CSSBox = Structure.extend({
 	constructor: function (element) {
 		if (!element || element.nodeType !== 1)
 			throw new Error('Invalid DOM element supplied.');

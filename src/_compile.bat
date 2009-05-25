@@ -1,6 +1,6 @@
 REM Orientation Manager
 set orientation=
-set orientation=%orientation% "Base.js" +
+set orientation=%orientation% "Structure.js" +
 set orientation=%orientation% "DOMUtils.js" +
 set orientation=%orientation% "CSSBox.js" + 
 set orientation=%orientation% "NodeUserData.js" +

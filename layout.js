@@ -6,162 +6,50 @@
 new function(_) {
 
 
-/*
-	Base.js, version 1.1
-	Copyright 2006-2007, Dean Edwards
-	License: http://www.opensource.org/licenses/mit-license.php
-*/
+//------------------------------------------------------------------------------
+// JavaScript Inheritance
+//------------------------------------------------------------------------------
 
-var Base = function() {
-	// dummy
+function Structure() { }
+Structure.extend = function (p, s) {
+	var oP = Object.prototype;
+	function augment(obj, props) {
+		// iterate all defined properties
+		for (var prop in props)
+			if (oP.hasOwnProperty.call(props, prop))
+				obj[prop] = props[prop];
+	
+		// IE has dontEnum issues
+/*@cc_on	var prop, dontenums = 'constructor|toString|valueOf|toLocaleString|isPrototypeOf|propertyIsEnumerable|hasOwnProperty'.split('|');
+		while (prop = dontenums.pop())
+			if (oP.hasOwnProperty.call(props, prop) && !oP.propertyIsEnumerable.call(props, prop))
+				obj[prop] = props[prop]; @*/
+	}
+	
+	// clean input
+	var props = p || {}, statics = s || {};
+	// create factory object
+	var ancestor = this, Factory = oP.hasOwnProperty.call(props, 'constructor') ?
+	    props.constructor : function () { ancestor.apply(this, arguments); }
+	
+	// copy and extend statics
+	augment(Factory, Structure);
+	augment(Factory, statics);
+	// copy and extend prototype
+	var Super = function () { };
+	Super.prototype = this.prototype;
+	Factory.prototype = new Super();
+	augment(Factory.prototype, props);
+	Factory.prototype.constructor = Factory;
+	
+	// return new factory object			
+	return Factory;
 };
 
-Base.extend = function(_instance, _static) { // subclass
-	var extend = Base.prototype.extend;
-	
-	// build the prototype
-	Base._prototyping = true;
-	var proto = new this;
-	extend.call(proto, _instance);
-	delete Base._prototyping;
-	
-	// create the wrapper for the constructor function
-	//var constructor = proto.constructor.valueOf(); //-dean
-	var constructor = proto.constructor;
-	var klass = proto.constructor = function() {
-		if (!Base._prototyping) {
-			if (this._constructing || this.constructor == klass) { // instantiation
-				this._constructing = true;
-				constructor.apply(this, arguments);
-				delete this._constructing;
-			} else if (arguments[0] != null) { // casting
-				return (arguments[0].extend || extend).call(arguments[0], proto);
-			}
-		}
-	};
-	
-	// build the class interface
-	klass.ancestor = this;
-	klass.extend = this.extend;
-	klass.forEach = this.forEach;
-	klass.implement = this.implement;
-	klass.prototype = proto;
-	klass.toString = this.toString;
-	klass.valueOf = function(type) {
-		//return (type == "object") ? klass : constructor; //-dean
-		return (type == "object") ? klass : constructor.valueOf();
-	};
-	extend.call(klass, _static);
-	// class initialisation
-	if (typeof klass.init == "function") klass.init();
-	return klass;
-};
-
-Base.prototype = {	
-	extend: function(source, value) {
-		if (arguments.length > 1) { // extending with a name/value pair
-			var ancestor = this[source];
-			if (ancestor && (typeof value == "function") && // overriding a method?
-				// the valueOf() comparison is to avoid circular references
-				(!ancestor.valueOf || ancestor.valueOf() != value.valueOf()) &&
-				/\bbase\b/.test(value)) {
-				// get the underlying method
-				var method = value.valueOf();
-				// override
-				value = function() {
-					var previous = this.base || Base.prototype.base;
-					this.base = ancestor;
-					var returnValue = method.apply(this, arguments);
-					this.base = previous;
-					return returnValue;
-				};
-				// point to the underlying method
-				value.valueOf = function(type) {
-					return (type == "object") ? value : method;
-				};
-				value.toString = Base.toString;
-			}
-			this[source] = value;
-		} else if (source) { // extending with an object literal
-			var extend = Base.prototype.extend;
-			// if this object has a customised extend method then use it
-			if (!Base._prototyping && typeof this != "function") {
-				extend = this.extend || extend;
-			}
-			var proto = {toSource: null};
-			// do the "toString" and other methods manually
-			var hidden = ["constructor", "toString", "valueOf"];
-			// if we are prototyping then include the constructor
-			var i = Base._prototyping ? 0 : 1;
-			while (key = hidden[i++]) {
-				if (source[key] != proto[key]) {
-					extend.call(this, key, source[key]);
-
-				}
-			}
-			// copy each of the source object's properties to this object
-			for (var key in source) {
-				if (!proto[key]) extend.call(this, key, source[key]);
-			}
-		}
-		return this;
-	},
-
-	base: function() {
-		// call this method from any other method to invoke that method's ancestor
-	}
-};
-
-// initialise
-Base = Base.extend({
-	constructor: function() {
-		this.extend(arguments[0]);
-	}
-}, {
-	ancestor: Object,
-	version: "1.1",
-	
-	forEach: function(object, block, context) {
-		for (var key in object) {
-			if (this.prototype[key] === undefined) {
-				block.call(context, object[key], key, object);
-			}
-		}
-	},
-		
-	implement: function() {
-		for (var i = 0; i < arguments.length; i++) {
-			if (typeof arguments[i] == "function") {
-				// if it's a function, call it
-				arguments[i](this.prototype);
-			} else {
-				// add the interface using the extend method
-				this.prototype.extend(arguments[i]);
-			}
-		}
-		return this;
-	},
-	
-	toString: function() {
-		return String(this.valueOf());
-	}
-});
-
-// important enough to steal from base2
+//[TODO] move this into Utils?
 function bind(fn, context) {
-  var lateBound = typeof fn != "function";
-  if (arguments.length > 2) {
-    var args = _slice.call(arguments, 2);
-    return function() {
-      return (lateBound ? context[fn] : fn).apply(context, args.concat.apply(args, arguments));
-    };
-  } else { // faster if there are no additional arguments
-    return function() {
-      return (lateBound ? context[fn] : fn).apply(context, arguments);
-    };
-  }
-};
-//----------------------------------------------------------------------
+        return function () { return fn.apply(context, arguments ); };
+}//----------------------------------------------------------------------
 // DOM utilities
 //----------------------------------------------------------------------
 
@@ -240,7 +128,7 @@ var DOMUtils = {
 // CSS Box
 //----------------------------------------------------------------------
 
-var CSSBox = Base.extend({
+var CSSBox = Structure.extend({
 	constructor: function (element) {
 		if (!element || element.nodeType !== 1)
 			throw new Error('Invalid DOM element supplied.');
@@ -344,7 +232,7 @@ var CSSBox = Base.extend({
 //----------------------------------------------------------------------
 
 //[TODO] could prefixes be randomly generated? or eliminated...
-var NodeUserData = Base.extend({
+var NodeUserData = Structure.extend({
 	node: null,
 	prefix: '',
 	constructor: function (node, prefix) {
@@ -396,7 +284,7 @@ if (!document.getUserData || !document.setUserData)
 // orientation manager
 //----------------------------------------------------------------------
 
-var OrientationManager = Base.extend({
+var OrientationManager = Structure.extend({
 	document: null,
 	constructor: function (document) {
 		// save document reference
@@ -434,7 +322,7 @@ var OrientationManager = Base.extend({
  */
  
 //@abstract
-var LayoutBase = Base.extend({
+var LayoutBase = Structure.extend({
 	document: null,
 	element: null,
 	box: null,
@@ -556,7 +444,7 @@ var OrientationBoxChild = LayoutBase.extend({
 	
 		//[FIX] Safari doesn't like dimensions of '0'
 		return DOMUtils.swapStyles(this.element, {width: '1px', overflow: 'auto'}, bind(function () {
-			return this.element.scrollWidth - this.box.getCSSLength('padding-left') - this.box.getCSSLength('padding-right');
+			return this.box._shiftDimension(this.element.scrollWidth, 'horizontal', 'padding', false);
 		}, this));
 	}
 });
@@ -564,37 +452,32 @@ var OrientationBoxChild = LayoutBase.extend({
 // resize observer
 //----------------------------------------------------------------------
 
-// node resize polling function (can't trust window.resize cross-browser)
+// element resize polling function (can't trust window.resize cross-browser)
 
-var ResizeObserver = Base.extend({
-	constructor: function (node) {
-		this.node = node;
-		this.refresh();
-		
-		// add polling function
-		setTimeout(bind(this.poll, this), 25);
+var ResizeObserver = Structure.extend({
+	constructor: function (element, timeout) {
+		this.element = element;
+		this.timeout = timeout || 25;
+		// initial call (no listeners, just updating cache)
+		this.poll();
 	},
 	
-	node: null,
+	element: null,
+	timeout: 0,
 	width: 0,
 	height: 0,
-	getDimension: function (dimension) {
-		// clientWidth/Height will not include scrollbars
-		return this.node['client' + dimension];
-	},
-	refresh: function () {
-		this.width = this.getDimension('Width');
-		this.height = this.getDimension('Height');
-	},
 	poll: function () {
 		// compare window size
-		if (this.width != this.getDimension('Width') || this.height != this.getDimension('Height')) {
+		if (this.width != this.element.clientWidth || this.height != this.element.clientHeight) {
 			for (var i = 0; i < this.listeners.length; i++)
 				this.listeners[i](this);
 		}
+		
 		// update cache
-		this.refresh();
-		setTimeout(bind(this.poll, this), 25);
+		this.width = this.element.clientWidth;
+		this.height = this.element.clientHeight;
+		// add timeout
+		setTimeout(bind(this.poll, this), this.timeout);
 	},
 	listeners: [],
 	addListener: function (listener) {
@@ -639,7 +522,7 @@ var LayoutManager = OrientationManager.extend({
 		if (!root || root.nodeType != 1)
 			throw new Error('Layout manager root must be an element.');
 		// orientation manager constructor
-		this.base(DOMUtils.getOwnerDocument(root));
+		OrientationManager.call(this, DOMUtils.getOwnerDocument(root));
 		
 		// check root position
 		if (!DOMUtils.contains(this.body, root) && root != this.body)
@@ -741,7 +624,7 @@ var LayoutBox = OrientationBox.extend({
 	children: null,
 	constructor: function () {
 		// construct layout box
-		this.base.apply(this, arguments);
+		OrientationBox.apply(this, arguments);
 		
 		// find flexible children (assume this doesn't expire for the lifespan on the object)
 		this.children = {horizontal: [], vertical: []};
@@ -872,7 +755,7 @@ var FullLayoutManager = LayoutManager.extend({
 		DOMUtils.setStyles(body, {height: '100%', width: '100%', margin: 0, border: 'none', padding: 0, overflow: 'visible'});
 
 		// construct manager
-		this.base(body);
+		LayoutManager.call(this, body);
 	}
 });
 

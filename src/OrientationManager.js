@@ -2,7 +2,7 @@
 // orientation manager
 //----------------------------------------------------------------------
 
-var OrientationManager = Base.extend({
+var OrientationManager = Structure.extend({
 	document: null,
 	constructor: function (document) {
 		// save document reference
@@ -40,7 +40,7 @@ var OrientationManager = Base.extend({
  */
  
 //@abstract
-var LayoutBase = Base.extend({
+var LayoutBase = Structure.extend({
 	document: null,
 	element: null,
 	box: null,

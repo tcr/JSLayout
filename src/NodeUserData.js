@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------
 
 //[TODO] could prefixes be randomly generated? or eliminated...
-var NodeUserData = Base.extend({
+var NodeUserData = Structure.extend({
 	node: null,
 	prefix: '',
 	constructor: function (node, prefix) {

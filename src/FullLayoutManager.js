@@ -10,7 +10,7 @@ var FullLayoutManager = LayoutManager.extend({
 		DOMUtils.setStyles(body, {height: '100%', width: '100%', margin: 0, border: 'none', padding: 0, overflow: 'visible'});
 
 		// construct manager
-		this.base(body);
+		LayoutManager.call(this, body);
 	}
 });
 
