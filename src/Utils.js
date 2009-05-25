@@ -56,16 +56,16 @@ var Utils = {
 		    style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = css;
 	},
 
-	// class attribute manipulation
-	addClass: function (element, className) {
-		Utils.removeClass(element, className);
-		element.className += ' ' + className;
+	// class attribute manipulation (base2)
+	addClass: function (element, token) {
+		if (!Utils.hasClass(element, token))
+			element.className += (element.className ? ' ' : '') + token;
 	},
-	removeClass: function (element, className) {
-		element.className = (' ' + (element.className || '') + ' ').replace(' ' + className + ' ', ' ');
+	removeClass: function (element, token) {
+		element.className = element.className.replace(new RegExp('(^|\\s)' + token + '(\\s|$)', 'g'), '$2').replace(/^\s|\s$/, '');
 	},
-	hasClass: function (element, className) {
-		return (' ' + (element.className || '') + ' ').indexOf(' ' + className + ' ') != -1;
+	hasClass: function (element, token) {
+		return (new RegExp('(^|\\s)' + token + '(\\s|$)')).test(element.className || '');
 	},
 	
 	// UA detection
