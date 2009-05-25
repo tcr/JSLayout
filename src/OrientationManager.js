@@ -13,6 +13,7 @@ var OrientationManager = Structure.extend({
 		
 		// add orientation styles
 		Utils.addStylesheet(document, [
+//[TODO] this specificity (-child) might be too much for fixed-width objects; is width: 0 necessary?
 			'.orientation-horizontal { overflow: hidden; width: 0; }',
 			'.orientation-horizontal-child { float: left; width: 0; }',
 		    ].join('\n'));
@@ -86,9 +87,10 @@ var OrientationBox = LayoutBase.extend({
 	},
 	
 	containChildTextNodes: function () {
+//[TODO] delete whitespace nodes? make this customizable?
 		// wrap child text nodes in span elements
 		for (var child = this.element.firstChild; child; child = child.nextSibling) {
-			if (child.nodeType == 3) {
+			if (child.nodeType == 3) {			
 				var wrap = this.document.createElement('span');
 				Utils.addClass(wrap, 'orientation-text');
 				child.parentNode.replaceChild(wrap, child);

@@ -71,6 +71,7 @@ var LayoutManager = OrientationManager.extend({
 	},
 	
 	// layout calculation
+//[TODO] caching of layout objects
 
 	calculate: function ()
 	{
@@ -114,6 +115,7 @@ var LayoutBox = OrientationBox.extend({
 		// construct layout box
 		OrientationBox.apply(this, arguments);
 		
+//[TODO] make this refreshable?
 		// find flexible children (assume this doesn't expire for the lifespan on the object)
 		this.children = {horizontal: [], vertical: []};
 		for (var child = this.element.firstChild, box; child; child = child.nextSibling)

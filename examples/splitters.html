@@ -7,15 +7,27 @@ div {
 margin: 0;
 }
 
-#panel, #toppanel, #bottompanel {
+#toppanel {
 padding: 1px 0.5em;
+height: 10em;
+background: #eef;
+overflow: auto;
 }
 
-#container {
-margin: 0;
+#bottompanel {
+padding: 1px 0.5em;
+background: #efe;
+overflow: auto;
 }
 
-#splitter1 {
+#leftpanel {
+padding: 1px 0.5em;
+width: 10em;
+background: #fee;
+overflow: auto;
+}
+
+div.v-splitter {
 width: 2px;
 background: #bbb;
 border-left: 1px solid #777;
@@ -23,92 +35,125 @@ border-right: 1px solid #ddd;
 cursor: w-resize;
 }
 
-#splitter2 {
+div.h-splitter {
 height: 2px;
 background: #bbb;
 border-top: 1px solid #777;
 border-bottom: 1px solid #ddd;
 cursor: n-resize;
 }
-
-#toppanel {
-height: 10em;
-background: #eef;
-overflow: auto;
-}
-
-#bottompanel {
-background: #efe;
-overflow: auto;
-}
-
-#panel {
-width: 10em;
-background: #fee;
-overflow: auto;
-}
 </style>
 
-<script src="base2/base2.js"></script>
+<!--
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+-->
+
 <script src="../layout.js"></script>
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
 
 <script>
-// main script
-new function () {
-	eval(base2.namespace);
-	eval(base2.Layout.namespace);
 
-	// loader
-	DOM.bind(document);
-	document.addEventListener('DOMContentLoaded', function () {
-		// add layout
-		var layout = new FullLayoutManager(document);
-		layout.setOrientation(document.querySelector('#container'), 'horizontal');
-		document.querySelectorAll('#container, #panel, #splitter1, #content, #bottompanel').forEach(function (element) {
-			layout.setFlexibleProperty(element, 'height');
-		});
-		document.querySelectorAll('#container, #content, #toppanel, #splitter2, #bottompanel').forEach(function (element) {
-			layout.setFlexibleProperty(element, 'width');
-		});
-		layout.calculate();
-		
-		// object references
-		var container = document.querySelector('#container');
-		var splitter1 = document.querySelector('#splitter1');
-		var panel = document.querySelector('#panel');
-		var content = document.querySelector('#content');
-		
-		// get splitter padding
-		var rect = panel.getBoundingClientRect(), computed = document.defaultView.getComputedStyle(panel, null);
-		var offset = rect.right - parseFloat(computed.getPropertyValue('width'));
-		// create the splitter
-		var moveHandler = function (e) {
-			panel.style.width = Math.max(Math.min(e.pageX - rect.left - offset, 500), 0) + 'px';
-//[TODO] update orientation minimums
-			layout.recalculate();
-		}
-		splitter1.addEventListener('mousedown', function (e) {
-			// get the left offset of the panel
-			document.addEventListener('mousemove', moveHandler, false);
-			container.style.cursor = 'w-resize';
-			e.preventDefault();
-		}, false);
-		document.addEventListener('mouseup', function () {
-			document.removeEventListener('mousemove', moveHandler, false);
-			container.style.cursor = 'auto';
-		}, false);
-	}, false);
+var CursorManager = {
+	setCursor: function (style) {
+		document.getElementsByTagName('body')[0].style.cursor = style;
+	},
+	resetCursor: function () {
+		document.getElementsByTagName('body')[0].style.cursor = '';
+	}
 };
+
+function HorizontalSplitter(layout, panel, after) {
+	// get container
+	var container = panel.parentNode;
+	// create the splitter
+	var splitter = document.createElement('div');
+	splitter.className = 'h-splitter';
+	container.insertBefore(splitter, panel.nextSibling);
+	
+	// get splitter padding
+	var rect = panel.getBoundingClientRect();
+	var offset = rect.bottom - parseFloat(document.defaultView.getComputedStyle(panel, null).getPropertyValue('height'));
+console.log(document.defaultView.getComputedStyle(panel, null).getPropertyValue('height'), rect.bottom);
+	// create the splitter
+	var moveHandler = function (e) {
+		panel.style.height = Math.max(Math.min(e.pageY - rect.top - offset, 500), 0) + 'px';
+		layout.recalculate();
+	}
+	splitter.addEventListener('mousedown', function (e) {
+		// get the left offset of the panel
+		document.addEventListener('mousemove', moveHandler, false);
+		CursorManager.setCursor('n-resize');
+		e.preventDefault();
+	}, false);
+	document.addEventListener('mouseup', function () {
+		document.removeEventListener('mousemove', moveHandler, false);
+		CursorManager.resetCursor();
+	}, false);
+}
+
+function VerticalSplitter(layout, panel, after) {
+	// get container
+	var container = panel.parentNode;
+	// create the splitter
+	var splitter = document.createElement('div');
+	splitter.className = 'v-splitter';
+	container.insertBefore(splitter, after ? panel.nextSibling : panel);
+	
+//[TODO] rect.left for after, etc.
+	// get splitter padding
+	var rect = panel.getBoundingClientRect();
+	var offset = rect.right - parseFloat(document.defaultView.getComputedStyle(panel, null).getPropertyValue('width'));
+	// create the splitter
+	var moveHandler = function (e) {
+		panel.style.width = Math.max(Math.min(e.pageX - rect.left - offset, 500), 0) + 'px';
+//[TODO] update orientation minimums
+		layout.recalculate();
+	}
+	splitter.addEventListener('mousedown', function (e) {
+		// get the left offset of the panel
+		document.addEventListener('mousemove', moveHandler, false);
+		CursorManager.setCursor('w-resize');
+		e.preventDefault();
+	}, false);
+	document.addEventListener('mouseup', function () {
+		document.removeEventListener('mousemove', moveHandler, false);
+		CursorManager.resetCursor();
+	}, false);
+}
+
+onContent(function () {
+	// node references
+	var leftpanel = document.getElementById('leftpanel');
+	var toppanel = document.getElementById('toppanel');
+	var bottompanel = document.getElementById('bottompanel');
+	
+	// initialize layout
+	var layout = new FullLayoutManager(document);
+	// apply styles, create splitters
+	new VerticalSplitter(layout, leftpanel, true);
+	Sizzle('#h-container, #v-container, #h-container > *, #bottompanel').forEach(function (element) {
+		layout.setFlexibleProperty(element, 'height');
+	});
+	layout.setOrientation(document.getElementById('h-container'), 'horizontal');
+	new HorizontalSplitter(layout, toppanel, true);
+	Sizzle('#h-container, #v-container, #v-container > *').forEach(function (element) {
+		layout.setFlexibleProperty(element, 'width');
+	});
+	// calculate
+	layout.calculate();
+});
+
 </script>
 </head>
 
 <body>
-<div id="container">
-<div id="panel">
+<div id="h-container">
+<div id="leftpanel">
 <p>This is a side panel. Drag the splitter to the right, up to 500px!</p>
 </div>
 <div id="splitter1"></div>
-<div id="content">
+<div id="v-container">
 <div id="toppanel">
 <h1>Splitter Test</h1>
 <p>This is a test using a splitter.</p>
