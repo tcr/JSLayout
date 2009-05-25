@@ -219,7 +219,6 @@ var CSSBox = Structure.extend({
 		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '2px');
 		var flag = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]] == dimension;
 		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
-alert(this.element.innerHTML + ' ' + flag);
 		return flag;
 	}
 }, {
