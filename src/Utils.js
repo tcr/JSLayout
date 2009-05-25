@@ -33,7 +33,6 @@ var Utils = {
 	},
 	
 	// style manipulation functions
-	//[TODO] support non-camel-case, maybe
 	swapStyles: function (element, tempStyles, callback) {
 		var curStyles = {};
 		for (var prop in tempStyles)
