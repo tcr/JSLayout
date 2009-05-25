@@ -211,6 +211,13 @@ var LayoutBoxChild = LayoutBase.extend({
 		// reset flex count
 		this.updateDivisor(axis);
 		(new LayoutBox(this.element.parentNode)).updateDivisor(axis);
+		
+		//[FIX] for dimensions, we must be using content-box sizing
+		if (property.match(/^(height|width)$/)) {
+			Utils.setStyleProperty(this.element.style, 'box-sizing', 'content-box');
+			Utils.setStyleProperty(this.element.style, '-moz-box-sizing', 'content-box');
+			Utils.setStyleProperty(this.element.style, '-webkit-box-sizing', 'content-box');
+		}
 	},
 
 	updateDivisor: function (axis) {

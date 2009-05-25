@@ -53,7 +53,7 @@ var Utils = {
 		var head = document.getElementsByTagName('head')[0] ||
 		    document.documentElement.appendChild(document.createElement('head'));
 		var style = head.appendChild(document.createElement('style'));
-		document.styleSheets[0].cssText ?
+		document.styleSheets[0].cssText !== undefined ?
 		    document.styleSheets[document.styleSheets.length - 1].cssText = css :
 		    style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = css;
 	},

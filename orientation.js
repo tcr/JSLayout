@@ -61,7 +61,7 @@ var Utils = {
 		var head = document.getElementsByTagName('head')[0] ||
 		    document.documentElement.appendChild(document.createElement('head'));
 		var style = head.appendChild(document.createElement('style'));
-		document.styleSheets[0].cssText ?
+		document.styleSheets[0].cssText !== undefined ?
 		    document.styleSheets[document.styleSheets.length - 1].cssText = css :
 		    style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = css;
 	},
@@ -214,9 +214,9 @@ var CSSBox = Structure.extend({
 	isContentBoxDimensionAuto: function (axis) {
 		// auto will not expand offset dimension with padding
 		var temp = Utils.getStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis]);
-		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '0px');
-		var dimension = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]];
 		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '1px');
+		var dimension = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]];
+		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], '2px');
 		var flag = this.element['offset' + CSSBox.AXIS_DIMENSION_UP[axis]] == dimension;
 		Utils.setStyleProperty(this.element.style, 'padding-' + CSSBox.AXIS_TL[axis], temp);
 		return flag;
