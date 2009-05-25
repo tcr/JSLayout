@@ -13,7 +13,7 @@ var LayoutManager = OrientationManager.extend({
 		OrientationManager.call(this, Utils.getOwnerDocument(root));
 		
 		// check root position
-		if (!Utils.contains(this.body, root) && root != this.body)
+		if (!Utils.isAncestorOf(this.body, root) && root != this.body)
 			throw new Error('Root node must be a descendant of the body element or the body itself.');
 		
 		// create resize listener
@@ -38,7 +38,7 @@ var LayoutManager = OrientationManager.extend({
 		// initialize
 		var box = new LayoutBoxChild(element);
 		// validate element
-		if (!Utils.contains(this.root, element))
+		if (!Utils.isAncestorOf(this.root, element))
 			throw new Error('Flexible elements must be descendants of the root node.');
 			
 		// normalize properties and get axis

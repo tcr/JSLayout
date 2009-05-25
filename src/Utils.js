@@ -7,7 +7,7 @@ var Utils = {
 	getOwnerDocument: function (node) {
 		return node.ownerDocument || node.document;
 	},
-	contains: function (parent, descendant) {
+	isAncestorOf: function (parent, descendant) {
 		parent.nodeType && descendant.nodeType;
 		if (parent.compareDocumentPosition)
 			return !!(parent.compareDocumentPosition(descendant) & 16);
@@ -16,6 +16,9 @@ var Utils = {
 		while (descendant && (descendant = descendant.parentNode) && parent != descendant)
 			continue;
 		return !!descendant;
+	},
+	isWhitespaceNode: function (node) {
+		return node && node.nodeType == 3 && node.data.match(/^\s+$/);
 	},
 	
 	// style object manipulation

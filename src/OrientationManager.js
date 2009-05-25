@@ -13,9 +13,9 @@ var OrientationManager = Structure.extend({
 		
 		// add orientation styles
 		Utils.addStylesheet(document, [
-//[TODO] this specificity (-child) might be too much for fixed-width objects; is width: 0 necessary?
-			'.orientation-horizontal { overflow: hidden; width: 0; }',
-			'.orientation-horizontal-child { float: left; width: 0; }',
+//[TODO] child selector would be so nice here
+			'.orientation-horizontal { overflow: hidden; }',
+			'.orientation-horizontal-child { float: left; }',
 		    ].join('\n'));
 	},
 	
@@ -29,7 +29,7 @@ var OrientationManager = Structure.extend({
 		// initialize
 		var parent = new OrientationBox(element);
 		// validate element
-		if (!Utils.contains(this.body, element))
+		if (!Utils.isAncestorOf(this.body, element))
 			throw new Error('Only descendants of the body element can have orientation.');
 		// set orientation
 		parent.setOrientation(axis == 'horizontal' ? axis : 'vertical');
@@ -66,53 +66,54 @@ var OrientationBox = LayoutBase.extend({
 			return;
 		this.data.set('orientation', axis);
 
-		// wrap or unwrap child text nodes
-		axis == 'horizontal' ? this.containChildTextNodes() : this.restoreChildTextNodes();
-		// update child elements
+		// sanitize child elements and update them
+		if (axis == 'horizontal')
+			this.sanitizeChildren();
 		for (var child = this.element.firstChild; child; child = child.nextSibling)
-			if (child.nodeType == 1)
-				(new OrientationBoxChild(child)).updateOrientation(axis);
+			(new OrientationBoxChild(child)).updateOrientation(axis);
 
-		// classes, styles
+		// manipulate widths and classes
 		if (axis == 'horizontal') {
+			// expand box size to contain floats without wrapping
+			if (this.box.isContentBoxDimensionAuto(axis)) {
+				this.box.setCSSLength('width', this.getContentSize());
+				this.data.set('container-horizontal-shrink', true);
+			}
 			// add class
 			Utils.addClass(this.element, 'orientation-horizontal');
-			// expand box size to contain floats without wrapping
-			this.box.setCSSLength('width', this.getContentSize());
 		} else {
-			// remove class and styles
+			// remove styles
+			if (this.data.get('container-horizontal-shrink')) {
+				this.box.resetCSSLength('width');
+				this.data.set('container-horizontal-shrink', false);
+			}
+			// remove class
 			Utils.removeClass(this.element, 'orientation-horizontal');
-			this.box.resetCSSLength('width');
 		}
 	},
 	
-	containChildTextNodes: function () {
-//[TODO] delete whitespace nodes? make this customizable?
-		// wrap child text nodes in span elements
-		for (var child = this.element.firstChild; child; child = child.nextSibling) {
-			if (child.nodeType == 3) {			
+	sanitizeChildren: function () {
+		// horizontal orientation requires only elements can be children
+		for (var i = 0, child; child = this.element.childNodes[i]; i++) {
+			if (child.nodeType == 3 && !Utils.isWhitespaceNode(child)) {
+				// wrap text nodes in span elements
 				var wrap = this.document.createElement('span');
 				Utils.addClass(wrap, 'orientation-text');
 				child.parentNode.replaceChild(wrap, child);
 				wrap.appendChild(child);
-				child = wrap;
+			} else if (child.nodeType != 1) {
+				// delete all other nodes
+				this.element.removeChild(child);
+				i--;
 			}
 		}		
-	},
-	restoreChildTextNodes: function () {
-		// undo child text node wrapping
-		for (var child = this.element.firstChild; child; child = child.nextSibling) {
-			if (child.nodeType == 1 && Utils.hasClass(child, 'orientation-text')) {
-				child = child.firstChild;
-				child.parentNode.parentNode.replaceChild(child, child.parentNode);
-			}
-		}
 	},
 	
 //[TODO] other ways of doing this? particularly horizontally...
 	// size of box content, depending on orientation
 	getContentSize: function () {
 		if (this.getOrientation() == 'vertical') {
+			// get vertical size by differing offsets of an anchor at start and end of content
 			var anchor = this.document.createElement('span'), box = new CSSBox(anchor);
 			Utils.setStyleProperty(anchor.style, 'block');
 			this.element.appendChild(anchor);
@@ -122,6 +123,7 @@ var OrientationBox = LayoutBase.extend({
 			this.element.removeChild(anchor);
 			return size;
 		} else {
+			// get horizontal size by adding box dimensions (slow)
 			for (var size = 0, child = this.element.firstChild; child; child = child.nextSibling)
 				if (child.nodeType == 1)
 					size += (new CSSBox(child)).getBoxDimension('margin', 'horizontal');
@@ -132,21 +134,22 @@ var OrientationBox = LayoutBase.extend({
 
 var OrientationBoxChild = LayoutBase.extend({
 	updateOrientation: function (axis) {
+		// manipulate widths and classes
 		if (axis == 'horizontal') {
 			// if box doesn't have fixed with, shrink horizontally
-			if (this.box.isContentBoxDimensionAuto(axis))
+			if (this.box.isContentBoxDimensionAuto(axis)) {
 				this.box.setCSSLength('width', this.getMinContentWidth());
-			this.data.set('horizontal-shrink', true);
-			
-			// set class
+				this.data.set('horizontal-shrink', true);
+			}			
+			// add class
 			Utils.addClass(this.element, 'orientation-horizontal-child');
 		} else {
 			// undo horizontal shrinkage
-			if (this.data.get('horizontal-shrink'))
+			if (this.data.get('horizontal-shrink')) {
 				this.box.resetCSSLength('width');
-			this.data.set('horizontal-shrink', false)
-			
-			// unset class
+				this.data.set('horizontal-shrink', false)
+			}			
+			// remove class
 			Utils.removeClass(this.element, 'orientation-horizontal-child');
 		}
 	},

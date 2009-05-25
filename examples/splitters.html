@@ -27,7 +27,7 @@ background: #fee;
 overflow: auto;
 }
 
-div.v-splitter {
+.v-splitter {
 width: 2px;
 background: #bbb;
 border-left: 1px solid #777;
@@ -35,7 +35,7 @@ border-right: 1px solid #ddd;
 cursor: w-resize;
 }
 
-div.h-splitter {
+.h-splitter {
 height: 2px;
 background: #bbb;
 border-top: 1px solid #777;
@@ -74,7 +74,6 @@ function HorizontalSplitter(layout, panel, after) {
 	// get splitter padding
 	var rect = panel.getBoundingClientRect();
 	var offset = rect.bottom - parseFloat(document.defaultView.getComputedStyle(panel, null).getPropertyValue('height'));
-console.log(document.defaultView.getComputedStyle(panel, null).getPropertyValue('height'), rect.bottom);
 	// create the splitter
 	var moveHandler = function (e) {
 		panel.style.height = Math.max(Math.min(e.pageY - rect.top - offset, 500), 0) + 'px';
