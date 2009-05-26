@@ -1,27 +1,28 @@
 <!DOCTYPE html>
+
 <html>
 <head>
-<title>Splitter Test</title>
+<title>JSLayout: Splitters Example</title>
 <style>
 div {
 margin: 0;
 }
 
 #toppanel {
-padding: 1px 0.5em;
+padding: 0.25em 0.5em;
 height: 10em;
 background: #eef;
 overflow: auto;
 }
 
-#bottompanel {
-padding: 1px 0.5em;
+#content {
+padding: 0.25em 0.5em;
 background: #efe;
 overflow: auto;
 }
 
 #leftpanel {
-padding: 1px 0.5em;
+padding: 0.25em 0.5em;
 width: 10em;
 background: #fee;
 overflow: auto;
@@ -111,7 +112,7 @@ function VerticalSplitter(layout, panel, pixelSize, locateAfter) {
 		pixelSize += e.pageX - mousePos;
 		mousePos = e.pageX;
 		panel.style.width = Math.max(Math.min(pixelSize, 500), 0) + 'px';
-//[TODO] update orientation minima
+		layout.updateOrientationMinima(container);
 		layout.recalculate();
 		e.preventDefault();
 	}
@@ -132,16 +133,16 @@ onContent(function () {
 	// node references
 	var leftpanel = document.getElementById('leftpanel');
 	var toppanel = document.getElementById('toppanel');
-	var bottompanel = document.getElementById('bottompanel');
+	var content = document.getElementById('content');
 	
 	// initialize layout
 	var layout = new FullLayoutManager(document);
 	// create splitters
-	new HorizontalSplitter(layout, toppanel, 150, true);
+	new HorizontalSplitter(layout, toppanel, 75, true);
 	new VerticalSplitter(layout, leftpanel, 150, true);	
 	// apply styles
 	layout.setOrientation(document.getElementById('h-container'), 'horizontal');
-	Sizzle('#h-container, #v-container, #h-container > *, #bottompanel').forEach(function (element) {
+	Sizzle('#h-container, #v-container, #h-container > *, #content').forEach(function (element) {
 		layout.setFlexibleProperty(element, 'height');
 	});
 	Sizzle('#h-container, #v-container, #v-container > *').forEach(function (element) {
@@ -157,16 +158,17 @@ onContent(function () {
 <body>
 <div id="h-container">
 <div id="leftpanel">
-<p>This is a side panel. Drag the splitter to the right, up to 500px!</p>
+<p>This is a side panel. Drag the splitter to the right, up to 500 pixels wide.</p>
 </div>
 <div id="v-container">
 <div id="toppanel">
-<h1>Splitter Test</h1>
-<p>This is a test using a splitter.</p>
+<p>This is a top panel. Drag the splitter below, up to 500 pixels high.</p>
 </div>
-<div id="bottompanel">
-<h2>Bottom panel</h2>
-<p>This is a test using two splitters.</p>
+<div id="content">
+<h1>Splitters Example</h1>
+<p><strong>This is an example of using JSLayout to create dynamic layouts, even when they are modified programmatically by JavaScript.</strong></p>
+<p>In this example, the two splitters are created by JavaScript on page load and attached to their respective panels. The <code>calculate()</code> function of the <code>LayoutManager</code> is called after setting up the layout, as usual. When a splitter is dragged, its content box dimension (<code>width</code> or <code>height</code>) are changed via CSS, and all that is needed is a subsequent call to the <code>recalculate()</code> function to update the layout. Splitter's are just a sample of what's possible with a flexible layout.</p>
+<p>There is one caveat with the vertical splitter: because it is the child of a horizontally-oriented box, the minimum size of the box must be updated so that the content panel doesn't overflow. This is easily done by calling the <code>updateOrientationMinima()</code> function of the layout manager.</p>
 </div>
 </div>
 </div>

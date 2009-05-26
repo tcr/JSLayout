@@ -34,6 +34,11 @@ var OrientationManager = Structure.extend({
 			throw new Error('Only descendants of the body element can have orientation.');
 		// set orientation
 		OrientationBox.setOrientation(element, axis == 'horizontal' ? axis : 'vertical');
+	},
+	
+	updateOrientationMinima: function (element) {
+		// update minimum dimensions of oriented element
+		OrientationBox.updateOrientationMinima(element);
 	}
 });
 
@@ -77,6 +82,13 @@ var OrientationBox = {
 			// remove class
 			CSSUtils.removeClass(element, 'orientation-horizontal');
 		}
+	},
+	
+	updateOrientationMinima: function (element) {
+		// expand box size to contain floats without wrapping
+		if (OrientationBox.getOrientation(element) == 'horizontal' &&
+		    OrientationData.get(element, 'container-horizontal-shrink'))
+			BoxUtils.setCSSLength(element, 'width', OrientationBox.getContentSize(element));
 	},
 	
 	sanitizeChildren: function (element) {
