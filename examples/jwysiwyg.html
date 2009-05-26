@@ -4,7 +4,9 @@
 <head>
 <title>JSLayout Example: Interacting with other plugins</title>
 <style>
-#container { padding: 1em; }
+#container { padding: 1em; background: #eee4cc; }
+#options { margin-top: 0.25em; }
+input { font-size: 0.8em; padding: 0 2em; margin-left: 0.5em; }
 </style>
 
 <!-- jQuery -->
@@ -35,7 +37,7 @@ onContent(function () {
 	Sizzle('#container, div.wysiwyg, div.wysiwyg > iframe').forEach(function (element) {
 		layout.setFlexibleProperty(element, 'width');
 	});
-	Sizzle('.horizontal').forEach(function (element) {
+	Sizzle('#options').forEach(function (element) {
 		layout.setOrientation(element, 'horizontal');
 		layout.setFlexibleProperty(element, 'margin-left');
 	});
@@ -48,9 +50,9 @@ onContent(function () {
 <body>
 <div id="container">
 <textarea id="wysiwyg" cols="50" rows="10">&lt;h1&gt;JSLayout&lt;/h1&gt;
-&lt;p&gt;This is an example of JSLayout interacting with other plugins, in this case, &lt;a href="http://www.jquery.com/"&gt;jQuery&lt;/a&gt; and &lt;a href="http://code.google.com/p/jwysiwyg/"&gt;jWYSIWYG&lt;/a&gt;. This is a demonstration of how JSLayout can be implemented with other plugins and widgets in a simple, non-invasive manner, as it directly and impartially manipulates DOM elements.&lt;/p&gt;
+&lt;p&gt;This is an example of JSLayout interacting with other plugins, in this case, &lt;a href="http://www.jquery.com/"&gt;jQuery&lt;/a&gt; and &lt;a href="http://code.google.com/p/jwysiwyg/"&gt;jWYSIWYG&lt;/a&gt;. By default, jWYSIWYG uses a fixed-size &lt;code&gt;div&lt;/code&gt; and &lt;code&gt;iframe&lt;/code&gt; in order to contain the content. Just by using a few simple CSS selectors, we can make the editor full-page without interfering with its operation. This is just one example of how JSLayout can be implemented with other plugins and widgets in a simple, non-invasive manner, as it directly and impartially manipulates styles rather than DOM elements.&lt;/p&gt;
 </textarea>
-<div class="horizontal">
+<div id="options">
 <input type="button" value="Save" class="button">
 <input type="button" value="Cancel" class="button">
 </div>
