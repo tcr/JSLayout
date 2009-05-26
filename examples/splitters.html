@@ -55,7 +55,7 @@ cursor: n-resize;
 
 <script>
 
-var PageManager = {
+var CursorManager = {
 	setCursor: function (style) {
 		document.getElementsByTagName('body')[0].style.cursor = style;
 	},
@@ -80,19 +80,22 @@ function HorizontalSplitter(layout, panel, pixelSize, locateAfter) {
 		pixelSize += e.pageY - mousePos;
 		mousePos = e.pageY;
 		panel.style.height = Math.max(Math.min(pixelSize, 500), 0) + 'px';
+		
+		// update layout
 		layout.recalculate();
+		// prevent text selection
 		e.preventDefault();
 	}
 	addEvent(splitter, 'mousedown', function (e) {
 		// get initial mouse position
 		mousePos = (e.pageY || e.clientY);
 		addEvent(document, 'mousemove', moveHandler);
-		PageManager.setCursor('n-resize');
+		CursorManager.setCursor('n-resize');
 		e.preventDefault();
 	});
 	addEvent(document, 'mouseup', function () {
 		removeEvent(document, 'mousemove', moveHandler);
-		PageManager.resetCursor();
+		CursorManager.resetCursor();
 	});
 }
 
@@ -112,20 +115,24 @@ function VerticalSplitter(layout, panel, pixelSize, locateAfter) {
 		pixelSize += e.pageX - mousePos;
 		mousePos = e.pageX;
 		panel.style.width = Math.max(Math.min(pixelSize, 500), 0) + 'px';
+		
+		// update layout
+		//[NOTE] horizontally, we have to update minima to prevent float wrapping
 		layout.updateOrientationMinima(container);
 		layout.recalculate();
+		// prevent text selection
 		e.preventDefault();
 	}
 	addEvent(splitter, 'mousedown', function (e) {
 		// get initial mouse position
 		mousePos = e.pageX;
 		addEvent(document, 'mousemove', moveHandler);
-		PageManager.setCursor('w-resize');
+		CursorManager.setCursor('w-resize');
 		e.preventDefault();
 	});
 	addEvent(document, 'mouseup', function () {
 		removeEvent(document, 'mousemove', moveHandler);
-		PageManager.resetCursor();
+		CursorManager.resetCursor();
 	});
 }
 
