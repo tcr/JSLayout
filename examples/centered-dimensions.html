@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>JSLayout Example: Centered Dimensions</title>
+<style type="text/css">
+
+#poem {
+	/* default styles */
+	margin: 0;
+	width: 23em;
+	background: #ccf;
+	padding: 15px;
+	text-align: center;
+	border-color: #400 #040 #004;
+	border-style: solid;
+}
+
+#container {
+	margin: 0;
+	padding: 1px;
+}
+
+</style>
+
+<!--
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+-->
+
+<script src="../layout.js"></script>
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
+
+<script>
+
+onContent(function () {
+	// node references
+	var poem = document.getElementById('poem');
+	var container = document.getElementById('container');
+	
+	// initialize layout
+	var layout = new FullLayoutManager(document);
+	layout.setFlexibleProperty(container, 'width');
+	layout.setFlexibleProperty(container, 'height');
+	layout.setFlexibleProperty(poem, 'margin-left');
+	layout.setFlexibleProperty(poem, 'margin-right');
+	layout.setFlexibleProperty(poem, 'margin-top');
+	layout.setFlexibleProperty(poem, 'margin-bottom');
+	layout.setFlexibleProperty(poem, 'border-top');
+	layout.setFlexibleProperty(poem, 'border-bottom');
+	layout.setFlexibleProperty(poem, 'border-left', 3);
+	layout.setFlexibleProperty(poem, 'border-right', 3);
+	layout.calculate();
+});
+
+</script>
+</head>
+
+<body>
+<div id="container">
+<p id="poem">
+There once was a man who was late all around;<br>
+He commissioned a clock to be built upside down.<br>
+So when he arrived late, he'd be likely to say,<br>
+"I'm surprised that I made it so early today!"
+</p>
+</div>
+</body>
+</html>
