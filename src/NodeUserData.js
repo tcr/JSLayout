@@ -7,15 +7,19 @@ var NodeUserData = Structure.extend({
 	constructor: function (prefix) {
 		this.prefix = prefix ? prefix + ':' : '';
 	},
+	
 	get: function (node, key) {
 		return node.getUserData(this.prefix + key);
 	},
+	
 	set: function (node, key, data) {
 		return node.setUserData(this.prefix + key, data, null);
 	},
+	
 	has: function (node, key) {
 		return this.get(node, key) != null;
 	},
+	
 	remove: function (node, key) {
 		this.set(node, key, null);
 	}

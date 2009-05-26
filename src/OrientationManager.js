@@ -22,6 +22,7 @@ var OrientationManager = Structure.extend({
 	getOrientation: function (element) {
 		return OrientationBox.getOrientation(element);
 	},
+	
 	setOrientation: function (element, axis) {
 		/* NOTE: orientation on body is possible, but float containment only works in Mozilla if
 		   overflow is defined on the document element, not the body; disallow it for uniformity's sake */

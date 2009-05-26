@@ -5,6 +5,8 @@
 // element resize polling function (can't trust window.resize cross-browser)
 
 var ResizeObserver = Structure.extend({
+	element: null,
+	timeout: 0,
 	constructor: function (element, timeout) {
 		this.element = element;
 		this.timeout = timeout || 25;
@@ -12,8 +14,6 @@ var ResizeObserver = Structure.extend({
 		this.poll();
 	},
 	
-	element: null,
-	timeout: 0,
 	width: 0,
 	height: 0,
 	poll: function () {
@@ -29,6 +29,7 @@ var ResizeObserver = Structure.extend({
 		// add timeout
 		setTimeout(Utils.bind(this.poll, this), this.timeout);
 	},
+	
 	listeners: [],
 	addListener: function (listener) {
 		this.listeners.push(listener);

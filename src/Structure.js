@@ -4,24 +4,24 @@
 
 function Structure() { }
 Structure.extend = function (p, s) {
-	var oP = Object.prototype;
+	var OP = Object.prototype;
 	function augment(obj, props) {
 		// iterate all defined properties
 		for (var prop in props)
-			if (oP.hasOwnProperty.call(props, prop))
+			if (OP.hasOwnProperty.call(props, prop))
 				obj[prop] = props[prop];
 	
 		// IE has dontEnum issues
 /*@cc_on	var prop, dontenums = 'constructor|toString|valueOf|toLocaleString|isPrototypeOf|propertyIsEnumerable|hasOwnProperty'.split('|');
 		while (prop = dontenums.pop())
-			if (oP.hasOwnProperty.call(props, prop) && !oP.propertyIsEnumerable.call(props, prop))
+			if (OP.hasOwnProperty.call(props, prop) && !OP.propertyIsEnumerable.call(props, prop))
 				obj[prop] = props[prop]; @*/
 	}
 	
 	// clean input
 	var props = p || {}, statics = s || {};
 	// create factory object
-	var ancestor = this, Factory = oP.hasOwnProperty.call(props, 'constructor') ?
+	var ancestor = this, Factory = OP.hasOwnProperty.call(props, 'constructor') ?
 	    props.constructor : function () { ancestor.apply(this, arguments); }
 	
 	// copy and extend statics

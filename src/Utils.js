@@ -19,6 +19,7 @@ var DOMUtils = {
 	getOwnerDocument: function (node) {
 		return node.ownerDocument || node.document;
 	},
+	
 	isAncestorOf: function (parent, descendant) {
 		parent.nodeType && descendant.nodeType;
 		if (parent.compareDocumentPosition)
@@ -29,9 +30,11 @@ var DOMUtils = {
 			continue;
 		return !!descendant;
 	},
+	
 	isWhitespaceNode: function (node) {
 		return node && node.nodeType == 3 && node.data.match(/^\s+$/);
 	},
+	
 	isElement: function (node) {
 		return node && node.nodeType == 1;
 	}
@@ -39,20 +42,25 @@ var DOMUtils = {
 
 var CSSUtils = {
 	// style object manipulation
+	
 	_toCamelCase: function (property) {
 		return property.replace(/\-([a-z])/g, function (string, letter) { return letter.toUpperCase(); });
 	},
+	
 	getStyleProperty: function (style, prop) {
 		return style.getPropertyValue ? style.getPropertyValue(prop) : style[CSSUtils._toCamelCase(prop)];
 	},
+	
 	setStyleProperty: function (style, prop, val) {
 		style.setProperty ? style.setProperty(prop, val, null) : style[CSSUtils._toCamelCase(prop)] = val;
 	},
+	
 	removeStyleProperty: function (style, prop) {
 		style.removeProperty ? style.removeProperty(prop) : style[CSSUtils._toCamelCase(prop)] = '';
 	},
 	
 	// style manipulation functions
+	
 	swapStyles: function (element, tempStyles, callback) {
 		var curStyles = {};
 		for (var prop in tempStyles)
@@ -62,10 +70,12 @@ var CSSUtils = {
 		CSSUtils.setStyles(element, curStyles);
 		return ret;
 	},
+	
 	setStyles: function (element, styles) {
 		for (var prop in styles)
 			CSSUtils.setStyleProperty(element.style, prop, styles[prop]);
 	},
+	
 	addStylesheet: function (document, content) {
 		var head = document.getElementsByTagName('head')[0] ||
 		    document.documentElement.appendChild(document.createElement('head'));
@@ -79,14 +89,17 @@ var CSSUtils = {
 		}
 	},
 
-	// class attribute manipulation (base2)
+	// class attribute manipulation (courtesy base2)
+	
 	addClass: function (element, token) {
 		if (!CSSUtils.hasClass(element, token))
 			element.className += (element.className ? ' ' : '') + token;
 	},
+	
 	removeClass: function (element, token) {
 		element.className = element.className.replace(new RegExp('(^|\\s)' + token + '(\\s|$)', 'g'), '$2').replace(/^\s|\s$/, '');
 	},
+	
 	hasClass: function (element, token) {
 		return (new RegExp('(^|\\s)' + token + '(\\s|$)')).test(element.className || '');
 	}
@@ -101,11 +114,13 @@ var BoxUtils = {
 	DIMENSION_AXIS: {width: 'horizontal', height: 'vertical'},
 
 	// CSS box dimensions
+	
 	_shiftDimension: function (element, dimension, axis, prop, expand) {
 		return dimension +
 		    (BoxUtils.getCSSLength(element, prop + '-' + BoxUtils.AXIS_TL[axis]) +
 		     BoxUtils.getCSSLength(element, prop + '-' + BoxUtils.AXIS_BR[axis]))*(expand?1:-1);
 	},
+	
 	getBoxDimension: function (element, type, axis) {
 		if (type == 'content')
 			return BoxUtils.getCSSLength(element, BoxUtils.AXIS_DIMENSION[axis]);
@@ -117,6 +132,7 @@ var BoxUtils = {
 				return element['offset' + BoxUtils.AXIS_DIMENSION_UP[axis]];
 		return BoxUtils._shiftDimension(element, BoxUtils.getBoxDimension(element, 'border', axis), axis, type, type == 'margin');
 	},
+	
 	isContentBoxDimensionAuto: function (element, axis) {
 		// auto will not expand offset dimension with padding
 		var temp = CSSUtils.getStyleProperty(element.style, 'padding-' + BoxUtils.AXIS_TL[axis]);
@@ -129,9 +145,11 @@ var BoxUtils = {
 	},
 	
 	// CSS box lengths
+	
 	_normalizeCSSLength: function (property) {
 		return property.replace(/^(border-[a-z]+)$/, '$1-width');
 	},
+	
 	getCSSLength: function (element, property) {
 		property = BoxUtils._normalizeCSSLength(property);
 		if (window.getComputedStyle) {
@@ -171,9 +189,11 @@ var BoxUtils = {
 		}
 		throw new Error('Cannot get computed element style.');
 	},
+	
 	setCSSLength: function (element, property, length) {
 		CSSUtils.setStyleProperty(element.style, BoxUtils._normalizeCSSLength(property), length + 'px');
 	},
+	
 	resetCSSLength: function (element, property) {
 		CSSUtils.removeStyleProperty(element.style, BoxUtils._normalizeCSSLength(property));
 	},
