@@ -134,6 +134,10 @@ var BoxUtils = {
 	},
 	
 	isContentBoxDimensionAuto: function (element, axis) {
+		//[FIX] IE is the only browser which supports computed style; IE6 has content-expansion issues anyway, so use this
+		if (element.currentStyle)
+			return element.currentStyle[BoxUtils.AXIS_DIMENSION[axis]] == 'auto';
+	
 		// auto will not expand offset dimension with padding
 		var temp = CSSUtils.getStyleProperty(element.style, 'padding-' + BoxUtils.AXIS_TL[axis]);
 		CSSUtils.setStyleProperty(element.style, 'padding-' + BoxUtils.AXIS_TL[axis], '1px');

@@ -15,7 +15,7 @@ var OrientationManager = Structure.extend({
 		CSSUtils.addStylesheet(document, [
 //[TODO] child selector would be so nice here
 			'.orientation-horizontal { overflow: hidden; }',
-			'.orientation-horizontal-child { float: left; }',
+			'.orientation-horizontal-child { float: left; }'
 		    ].join('\n'));
 	},
 	
@@ -144,6 +144,10 @@ var OrientationBoxChild = {
 			}			
 			// add class
 			CSSUtils.addClass(element, 'orientation-horizontal-child');
+			
+			//[FIX] IE6 has a float-margin doubling bug
+			if (Utils.isUserAgent(/MSIE 6\./))
+				element.runtimeStyle.display = 'inline';
 		} else {
 			// undo horizontal shrinkage
 			if (OrientationData.get(element, 'horizontal-shrink')) {
@@ -152,6 +156,10 @@ var OrientationBoxChild = {
 			}			
 			// remove class
 			CSSUtils.removeClass(element, 'orientation-horizontal-child');
+			
+			//[FIX] IE6 has a float-margin doubling bug
+			if (Utils.isUserAgent(/MSIE 6\./))
+				element.runtimeStyle.display = '';
 		}
 	},
 
