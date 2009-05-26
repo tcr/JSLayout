@@ -134,6 +134,10 @@ var BoxUtils = {
 	},
 	
 	isContentBoxDimensionAuto: function (element, axis) {
+		// replaced elements, by default, are fixed-size
+		if (element.nodeName.toLowerCase().match(/^(input|button|object|applet|iframe|textarea)$/))
+			return false;
+	
 		//[FIX] IE is the only browser which supports computed style; IE6 has content-expansion issues anyway, so use this
 		if (element.currentStyle)
 			return element.currentStyle[BoxUtils.AXIS_DIMENSION[axis]] == 'auto';

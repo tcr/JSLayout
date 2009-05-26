@@ -31,7 +31,7 @@ onContent(function () {
 
 	// initialize layout
 	var layout = new FullLayoutManager(document);
-	Sizzle('#container, div.wysiwyg, div.wysiwyg > iframe').forEach(function (element) {
+	Sizzle('#container, div.wysiwyg, div.wysiwyg').forEach(function (element) {
 		layout.setFlexibleProperty(element, 'height');
 	});
 	Sizzle('#container, div.wysiwyg, div.wysiwyg > iframe').forEach(function (element) {
