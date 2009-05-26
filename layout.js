@@ -617,7 +617,6 @@ var LayoutManager = OrientationManager.extend({
 var LayoutStyleCache = Structure.extend({
 	cache: null,
 	document: null,
-	stylesheet: null,
 	constructor: function (document) {
 		this.document = document;
 		this.cache = {};
@@ -632,18 +631,15 @@ var LayoutStyleCache = Structure.extend({
 	
 	updateStyles: function () {
 		// create the stylesheet content, like a bastardized innerCSS
-		var css = '';
 		for (var id in this.cache) {
-			css += '#' + id + ' {\n';
+			var node = document.getElementById(id);
+			var css = '';
 			for (var prop in this.cache[id])
 				css += prop + ': ' + this.cache[id][prop] + ';\n';
-			css += '}\n\n';
+			node.style.cssText = css;
 			
 			delete this.cache[id];
 		}
-		if (this.stylesheet)
-			CSSUtils.removeStylesheet(this.stylesheet);
-		this.stylesheet = CSSUtils.addStylesheet(this.document, css);
 	}
 }, {
 	counter: 0
