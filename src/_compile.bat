@@ -13,5 +13,5 @@ set layout=%layout% "LayoutManager.js" +
 set layout=%layout% "FullLayoutManager.js"
 
 REM exports
-copy "_orientation_open.js" + %orientation% + "_orientation_close.js" "..\orientation.js"
-copy "_layout_open.js" + %layout% + "_layout_close.js" "..\layout.js"
+copy "_orientation_open.js" + %orientation% + "_orientation_close.js" "..\jslayout-orientation.js"
+copy "_layout_open.js" + %layout% + "_layout_close.js" "..\jslayout.js"

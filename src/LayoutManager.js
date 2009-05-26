@@ -116,6 +116,10 @@ var LayoutManager = OrientationManager.extend({
  * style change cache
  */
  
+// Helps minimize page reflow during (re)calculate phases. Some references:
+// http://www.stubbornella.org/content/2009/03/27/reflows-repaints-css-performance-making-your-javascript-slow/
+// http://dev.opera.com/articles/view/efficient-javascript/?page=3#reflow
+ 
 var LayoutStyleCache = Structure.extend({
 	cache: null,
 	document: null,
@@ -129,9 +133,9 @@ var LayoutStyleCache = Structure.extend({
 	},
 	
 	updateStyles: function () {
-		// create the stylesheet content, like a bastardized innerCSS
+		// update styles in bulk to hopefully minimize reflow
 		for (var i = 0; i < this.cache.length; i++)
-			CSSUtils.setStyleProperty(this.cache[i][0].style, this.cache[i][1], this.cache[i][2]);
+			BoxUtils.setCSSLength(this.cache[i][0], this.cache[i][1], this.cache[i][2]);
 		this.cache = [];
 	}
 });
@@ -252,7 +256,7 @@ var LayoutBoxChild = {
 		// set flexible properties
 		var properties = LayoutData.get(element, 'properties-' + axis) || {};
 		for (var prop in properties)
-			cache.queueStyleChange(element, (prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop] + 'px');
+			cache.queueStyleChange(element, (prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop]);
 		
 		// cache content-box size
 		if (prop.match(/^(width|height)$/))

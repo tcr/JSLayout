@@ -168,6 +168,7 @@ var BoxUtils = {
 			// getComputedStyle emulation for IE (courtesy Dean Edwards)
 			var currentVal = CSSUtils.getStyleProperty(element.currentStyle, property);
 			if (property.match(/^(width|height)$/))
+//[TODO] pixelHeight/pixelWidth?
 				return BoxUtils._shiftDimension(element, BoxUtils.getBoxDimension(element, 'padding', BoxUtils.DIMENSION_AXIS[property]), 'padding', false);
 			if (/^\-?\d+(px)?$/i.test(currentVal) || currentVal == 'none')
 				return parseFloat(currentVal) || 0;
@@ -192,6 +193,14 @@ var BoxUtils = {
 	
 	setCSSLength: function (element, property, length) {
 		CSSUtils.setStyleProperty(element.style, BoxUtils._normalizeCSSLength(property), length + 'px');
+		
+		//[FIX] IE6 doesn't support min-height, min-width
+		if (Utils.isUserAgent(/MSIE 6\./)) {
+			if (property == 'min-height')
+				element.runtimeStyle.height = length + 'px';
+			if (property == 'min-width')
+				element.runtimeStyle.width = length + 'px';
+		}
 	},
 	
 	resetCSSLength: function (element, property) {
