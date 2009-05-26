@@ -144,9 +144,9 @@ var BoxUtils = {
 		}
 		else if (element.currentStyle) {
 			// getComputedStyle emulation for IE (courtesy Dean Edwards)
-			var currentVal = Utils.getStyleProperty(element.currentStyle, property);
+			var currentVal = CSSUtils.getStyleProperty(element.currentStyle, property);
 			if (property.match(/^(width|height)$/))
-				return BoxUtils._shiftDimension(element, BoxUtils.getBoxDimension('padding', BoxUtils.DIMENSION_AXIS[property]), 'padding', false);
+				return BoxUtils._shiftDimension(element, BoxUtils.getBoxDimension(element, 'padding', BoxUtils.DIMENSION_AXIS[property]), 'padding', false);
 			if (/^\-?\d+(px)?$/i.test(currentVal) || currentVal == 'none')
 				return parseFloat(currentVal) || 0;
 			if (property.match(/^border/) && !(/^\-\d+/.test(currentVal))) { // border word-values

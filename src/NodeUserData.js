@@ -2,53 +2,38 @@
 // node user data manager
 //----------------------------------------------------------------------
 
-//[TODO] could prefixes be randomly generated? or eliminated...
 var NodeUserData = Structure.extend({
-	node: null,
 	prefix: '',
-	constructor: function (node, prefix) {
-		if (!node || !node.nodeType)
-			throw new Error('Invalid DOM node supplied.');
-		this.node = node;
+	constructor: function (prefix) {
 		this.prefix = prefix ? prefix + ':' : '';
 	},
-	get: function (key) {
-		return NodeUserData.getUserData(this.node, this.prefix + key);
+	get: function (node, key) {
+		return node.getUserData(this.prefix + key);
 	},
-	set: function (key, data) {
-		return NodeUserData.setUserData(this.node, this.prefix + key, data, null);
+	set: function (node, key, data) {
+		return node.setUserData(this.prefix + key, data, null);
 	},
-	has: function (key) {
-		return this.get(key) != null;
+	has: function (node, key) {
+		return this.get(node, key) != null;
 	},
-	remove: function (key) {
-		this.set(key, null);
-	},
-	ensure: function (key, defaultValue) {
-		if (!this.has(key))
-			this.set(key, defaultValue);
-	}
-}, {
-	'getUserData': function (node, key) {
-		return node.getUserData(key);
-	},
-	'setUserData': function (node, key, value, handler) {
-		return node.setUserData(key, value, handler);
+	remove: function (node, key) {
+		this.set(node, key, null);
 	}
 });
 
+// check for implementation of DOM UserData
 if (!document.getUserData || !document.setUserData)
 {
-	// create our own data cache
+	// create private data cache
 	var userData = {}, userDataID = 0;
-	NodeUserData.getUserData = function (node, key) {
+	NodeUserData.prototype.get = function (node, key) {
 		if (typeof node['data-userDataKey'] == 'undefined')
 			node['data-userDataKey'] = ++userDataID;
 		return userData[node['data-userDataKey']] && userData[node['data-userDataKey']][key];
 	};
-	NodeUserData.setUserData = function (node, key, value, handler) {
-		var old = NodeUserData.getUserData(node, key);
-		(userData[node['data-userDataKey']] || (userData[node['data-userDataKey']] = {}))[key] = value;
+	NodeUserData.prototype.set = function (node, key, data) {
+		var old = this.get(node, key);
+		(userData[node['data-userDataKey']] || (userData[node['data-userDataKey']] = {}))[key] = data;
 		return old;
 	};
 }
