@@ -77,10 +77,6 @@ var CSSUtils = {
 			head.appendChild(style);
 			document.styleSheets[document.styleSheets.length - 1].cssText = content;
 		}
-		return style;
-	},
-	removeStylesheet: function (style) {
-		style.parentNode.removeChild(style);
 	},
 
 	// class attribute manipulation (base2)

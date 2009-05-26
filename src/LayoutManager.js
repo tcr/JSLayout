@@ -121,30 +121,19 @@ var LayoutStyleCache = Structure.extend({
 	document: null,
 	constructor: function (document) {
 		this.document = document;
-		this.cache = {};
+		this.cache = [];
 	},
 	
 	queueStyleChange: function (node, prop, value) {
-		if (!node.id)
-			node.id = '_layout_style_cache_' + LayoutStyleCache.counter++;
-		this.cache[node.id] = this.cache[node.id] || {};
-		this.cache[node.id][prop] = value;
+		this.cache.push(arguments);
 	},
 	
 	updateStyles: function () {
 		// create the stylesheet content, like a bastardized innerCSS
-		for (var id in this.cache) {
-			var node = document.getElementById(id);
-			var css = '';
-			for (var prop in this.cache[id])
-				css += prop + ': ' + this.cache[id][prop] + ';\n';
-			node.style.cssText = css;
-			
-			delete this.cache[id];
-		}
+		for (var i = 0; i < this.cache.length; i++)
+			CSSUtils.setStyleProperty(this.cache[i][0].style, this.cache[i][1], this.cache[i][2]);
+		this.cache = [];
 	}
-}, {
-	counter: 0
 });
 
 /*
