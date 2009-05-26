@@ -124,7 +124,6 @@ function VerticalSplitter(layout, panel, pixelSize, locateAfter) {
 	});
 	addEvent(document, 'mouseup', function () {
 		removeEvent(document, 'mousemove', moveHandler);
-		PageManager.setSelectability(true);
 		PageManager.resetCursor();
 	});
 }
@@ -160,13 +159,11 @@ onContent(function () {
 <div id="leftpanel">
 <p>This is a side panel. Drag the splitter to the right, up to 500px!</p>
 </div>
-<div id="splitter1"></div>
 <div id="v-container">
 <div id="toppanel">
 <h1>Splitter Test</h1>
 <p>This is a test using a splitter.</p>
 </div>
-<div id="splitter2"></div>
 <div id="bottompanel">
 <h2>Bottom panel</h2>
 <p>This is a test using two splitters.</p>
