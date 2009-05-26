@@ -2,8 +2,9 @@
 // package
 //------------------------------------------------------------------------------
 
-	// exports
-	window.OrientationManager = OrientationManager;
+// exports
+window.OrientationManager = OrientationManager;
+
 };
 
 //
