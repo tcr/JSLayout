@@ -87,7 +87,7 @@ var LayoutManager = OrientationManager.extend({
 					// reset layout
 					var children = LayoutBox.getFlexibleChildren(parent, axis);
 					if (children.length)
-						LayoutBox.resetLayout(parent, children, axis, this);
+						LayoutBox.resetLayout(parent, children, axis, this.cache);
 				}, this)
 			});
 		this.cache.updateStyles();
@@ -105,7 +105,7 @@ var LayoutManager = OrientationManager.extend({
 					// calculate layout
 					var children = LayoutBox.getFlexibleChildren(parent, axis);
 					if (children.length)
-						LayoutBox.calculateLayout(parent, children, axis, this);
+						LayoutBox.calculateLayout(parent, children, axis, this.cache);
 				}, this)
 			});
 		this.cache.updateStyles();
@@ -152,67 +152,70 @@ var LayoutBox = {
 	},
 
 	resetLayout: function (parent, children, axis, layout) {
-		// reset parent flex unit
-		LayoutData.set(parent, 'container-unit-' + axis, 0);
 		// reset children properties
 		for (var i = 0; i < children.length; i++) {
-			// reset flexible properties
 			LayoutData.set(children[i], 'unit-' + axis, 0);
 			LayoutBoxChild.updateFlexibleProperties(children[i], axis, 0, layout);
 		}
 	},
 
-	calculateLayout: function (parent, children, axis, layout) {
-		// calculate available free space in parent
-		var contentSize, contentBoxSize, divisor, oldFlexUnit, newFlexUnit;
+	getUsedSpace: function (parent, children, axis) {
+		// subtract children flexible space from content size
+		var contentSize = OrientationBox.getContentSize(parent);
+		for (var i = 0; i < children.length; i++)
+			contentSize -= LayoutBoxChild.getFlexibleSpace(children[i], axis);
+		return contentSize;
+	},
+
+	calculateLayout: function (parent, children, axis, cache) {
 		// get content box size (actual, or desired by flex)
-		contentBoxSize = LayoutData.has(parent, 'content-size-cache-' + axis) ?
+		var contentBoxSize = LayoutData.has(parent, 'content-size-cache-' + axis) ?
 		    LayoutData.get(parent, 'content-size-cache-' + axis) :
 		    BoxUtils.getBoxDimension(parent, 'content', axis);
+		// calculate available free space in parent
+		var usedSpace, divisor;
 			
 		// calculate flex unit (with flow)
 		if (axis == OrientationBox.getOrientation(parent)) {
-			contentSize = OrientationBox.getContentSize(parent);
+			usedSpace = LayoutBox.getUsedSpace(parent, children, axis);
 			divisor = LayoutData.get(parent, 'container-divisor-' + axis);
-			oldFlexUnit = LayoutData.get(parent, 'container-unit-' + axis);
-			
-			// content box dimensions may be larger than flex unit; subtract from content size
-			for (var i = 0; i < children.length; i++)
-				if (LayoutBoxChild.hasFlexibleProperty(children[i], axis, BoxUtils.AXIS_DIMENSION[axis]))
-					contentSize -= BoxUtils.getBoxDimension(children[i], 'content', axis) -
-					    (oldFlexUnit * LayoutBoxChild.getFlexibleProperty(children[i], axis, BoxUtils.AXIS_DIMENSION[axis]));
 		}
 		
 		// iterate flexible children
 		for (var i = 0; i < children.length; i++) {
 			// calculate flex unit (against flow)
 			if (axis != OrientationBox.getOrientation(parent)) {
-				contentSize = BoxUtils.getBoxDimension(children[i], 'margin', axis);
-				divisor = LayoutData.get(children[i], 'divisor-' + axis);
-				oldFlexUnit = LayoutData.get(children[i], 'unit-' + axis);
-				
-				// content box dimensions may be larger than flex unit; subtract from content size
-				if (LayoutBoxChild.hasFlexibleProperty(children[i], axis, BoxUtils.AXIS_DIMENSION[axis]))
-					contentSize -= BoxUtils.getBoxDimension(children[i], 'content', axis) -
-					    (oldFlexUnit * LayoutBoxChild.getFlexibleProperty(children[i], axis, BoxUtils.AXIS_DIMENSION[axis]));
+				usedSpace = LayoutBoxChild.getUsedSpace(children[i], axis);
+				divisor = LayoutData.get(children[i], 'divisor-' + axis)
 			}
 			
-			// set flexible properties
-			var newFlexUnit = Math.max((contentBoxSize - (contentSize - (divisor * oldFlexUnit))) / divisor, 0);
-			LayoutBoxChild.updateFlexibleProperties(children[i], axis, newFlexUnit, layout);
-			
-			// cache flex unit (against flow)
-			if (axis != OrientationBox.getOrientation(parent))
-				LayoutData.set(children[i], 'unit-' + axis, newFlexUnit);
+			// calculate flex unit and set flexible properties
+			var flexUnit = Math.max((contentBoxSize - usedSpace) / divisor, 0);
+			LayoutBoxChild.updateFlexibleProperties(children[i], axis, flexUnit, cache);
+			// cache flex unit
+			LayoutData.set(children[i], 'unit-' + axis, flexUnit);
 		}
-		
-		// cache flex unit (with flow)
-		if (axis == OrientationBox.getOrientation(parent))
-			LayoutData.set(parent, 'parent-unit-' + axis, newFlexUnit);
 	}
 };
 
-var LayoutBoxChild = {	
+var LayoutBoxChild = {
+	getUsedSpace: function (child, axis) {
+		// subtract flexible space from content size
+		var contentSize = BoxUtils.getBoxDimension(child, 'margin', axis);
+		return contentSize - LayoutBoxChild.getFlexibleSpace(child, axis);
+	},
+	
+	getFlexibleSpace: function (child, axis) {
+		// calculate space taken up by flexible dimensions
+		var flexUnit = LayoutData.get(child, 'unit-' + axis);
+		var flexSize = LayoutData.get(child, 'divisor-' + axis) * flexUnit;
+		// content box dimensions may exceed flex unit; subtract from content size
+		if (LayoutBoxChild.hasFlexibleProperty(child, axis, BoxUtils.AXIS_DIMENSION[axis]))
+			flexSize += BoxUtils.getBoxDimension(child, 'content', axis) -
+			    (flexUnit * LayoutBoxChild.getFlexibleProperty(child, axis, BoxUtils.AXIS_DIMENSION[axis]));
+		return flexSize;
+	},
+	
 	getFlexibleProperty: function (element, axis, property) {
 		return LayoutData.has(element, 'properties-' + axis) && LayoutData.get(element, 'properties-' + axis)[property];
 	},
@@ -245,11 +248,11 @@ var LayoutBoxChild = {
 		return LayoutData.has(element, 'divisor-' + axis) && (LayoutData.get(element, 'divisor-' + axis) > 0);
 	},
 	
-	updateFlexibleProperties: function (element, axis, unit, layout) {
+	updateFlexibleProperties: function (element, axis, unit, cache) {
 		// set flexible properties
 		var properties = LayoutData.get(element, 'properties-' + axis) || {};
 		for (var prop in properties)
-			layout.cache.queueStyleChange(element, (prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop] + 'px');
+			cache.queueStyleChange(element, (prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop] + 'px');
 		
 		// cache content-box size
 		if (prop.match(/^(width|height)$/))
