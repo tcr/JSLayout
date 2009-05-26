@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>JSLayout Example: Interacting with other plugins</title>
+<style>
+#container { padding: 1em; }
+</style>
+
+<!-- jQuery -->
+<script type="text/javascript" src="resize/jquery-1.3.2.min.js"></script>
+<script src="jwysiwyg/jquery.wysiwyg.js"></script>
+<link href="jwysiwyg/jquery.wysiwyg.css" type="text/css" rel="stylesheet">
+
+<!--
+<script type='text/javascript' src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+-->
+
+<!-- layout -->
+<script src="../layout.js"></script>
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
+
+<script type="text/javascript">
+
+onContent(function () {
+	// initialize editor
+	$('#wysiwyg').wysiwyg();
+
+	// initialize layout
+	var layout = new FullLayoutManager(document);
+	Sizzle('#container, div.wysiwyg, div.wysiwyg > iframe').forEach(function (element) {
+		layout.setFlexibleProperty(element, 'height');
+	});
+	Sizzle('#container, div.wysiwyg, div.wysiwyg > iframe').forEach(function (element) {
+		layout.setFlexibleProperty(element, 'width');
+	});
+	Sizzle('.horizontal').forEach(function (element) {
+		layout.setOrientation(element, 'horizontal');
+		layout.setFlexibleProperty(element, 'margin-left');
+	});
+	layout.calculate();
+});
+
+</script>
+</head>
+
+<body>
+<div id="container">
+<textarea id="wysiwyg" cols="50" rows="10">&lt;h1&gt;JSLayout&lt;/h1&gt;
+&lt;p&gt;This is an example of JSLayout interacting with other plugins, in this case, &lt;a href="http://www.jquery.com/"&gt;jQuery&lt;/a&gt; and &lt;a href="http://code.google.com/p/jwysiwyg/"&gt;jWYSIWYG&lt;/a&gt;. This is a demonstration of how JSLayout can be implemented with other plugins and widgets in a simple, non-invasive manner, as it directly and impartially manipulates DOM elements.&lt;/p&gt;
+</textarea>
+<div class="horizontal">
+<input type="button" value="Save" class="button">
+<input type="button" value="Cancel" class="button">
+</div>
+</div>
+</body>
+</html>
