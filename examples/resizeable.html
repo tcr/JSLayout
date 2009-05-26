@@ -49,10 +49,9 @@ onContent(function () {
 	});
 
 	window.resizeFrame = function () {
-		var frame = document.querySelector('#frame');
 		frame.style.width = prompt('Width:', 400) + 'px';
 		frame.style.height = prompt('Height:', 300) + 'px';
-		confirm('Recalc?');
+		alert('Now recalculating layout.');
 		layout.recalculate();
 	}
 });

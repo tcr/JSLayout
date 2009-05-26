@@ -175,7 +175,7 @@ onContent(function () {
 <h1>Splitters Example</h1>
 <p><strong>This is an example of using JSLayout to create dynamic layouts, even when they are modified programmatically by JavaScript.</strong></p>
 <p>In this example, the two splitters are created by JavaScript on page load and attached to their respective panels. The <code>calculate()</code> function of the <code>LayoutManager</code> is called after setting up the layout, as usual. When a splitter is dragged, its content box dimension (<code>width</code> or <code>height</code>) are changed via CSS, and all that is needed is a subsequent call to the <code>recalculate()</code> function to update the layout. Splitter's are just a sample of what's possible with a flexible layout.</p>
-<p>There is one caveat with the vertical splitter: because it is the child of a horizontally-oriented box, the minimum size of the box must be updated so that the content panel doesn't overflow. This is easily done by calling the <code>updateOrientationMinima()</code> function of the layout manager.</p>
+<p>There is one caveat with the vertical splitter: when any non-flexible horizontal child dimension of a horizontally-oriented box is changed, the minimum size of must be updated so that the content panel doesn't overflow or stay too wide. This is easily done by calling the <code>updateOrientationMinima()</code> function of the layout manager.</p>
 </div>
 </div>
 </div>
