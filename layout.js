@@ -74,13 +74,21 @@ var CSSUtils = {
 		for (var prop in styles)
 			CSSUtils.setStyleProperty(element.style, prop, styles[prop]);
 	},
-	addStylesheet: function (document, css) {
+	addStylesheet: function (document, content) {
 		var head = document.getElementsByTagName('head')[0] ||
 		    document.documentElement.appendChild(document.createElement('head'));
-		var style = head.appendChild(document.createElement('style'));
-		document.styleSheets[0].cssText !== undefined ?
-		    document.styleSheets[document.styleSheets.length - 1].cssText = css :
-		    style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = css;
+		var style = document.createElement('style');
+		try {
+			style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = content;
+			head.appendChild(style);
+		} catch (e) {
+			head.appendChild(style);
+			document.styleSheets[document.styleSheets.length - 1].cssText = content;
+		}
+		return style;
+	},
+	removeStylesheet: function (style) {
+		style.parentNode.removeChild(style);
 	},
 
 	// class attribute manipulation (base2)
@@ -494,6 +502,7 @@ var ElementTraversal = {
 
 var LayoutManager = OrientationManager.extend({
 	root: null,
+	cache: null,
 	constructor: function (root) {
 		// save root
 		this.root = root;
@@ -509,6 +518,9 @@ var LayoutManager = OrientationManager.extend({
 		// create resize listener
 		var observer = new ResizeObserver(root);
 		observer.addListener(Utils.bind(this.recalculate, this));
+		
+		// create style cache
+		this.cache = new LayoutStyleCache(this.document);
 	},
 
 	getFlexibleProperty: function (element, property) {
@@ -573,9 +585,10 @@ var LayoutManager = OrientationManager.extend({
 					// reset layout
 					var children = LayoutBox.getFlexibleChildren(parent, axis);
 					if (children.length)
-						LayoutBox.resetLayout(parent, children, axis);
+						LayoutBox.resetLayout(parent, children, axis, this);
 				}, this)
 			});
+		this.cache.updateStyles();
 		
 		// initial recalculate
 		this.recalculate();
@@ -590,10 +603,50 @@ var LayoutManager = OrientationManager.extend({
 					// calculate layout
 					var children = LayoutBox.getFlexibleChildren(parent, axis);
 					if (children.length)
-						LayoutBox.calculateLayout(parent, children, axis);
+						LayoutBox.calculateLayout(parent, children, axis, this);
 				}, this)
 			});
+		this.cache.updateStyles();
 	}
+});
+
+/*
+ * style change cache
+ */
+ 
+var LayoutStyleCache = Structure.extend({
+	cache: null,
+	document: null,
+	stylesheet: null,
+	constructor: function (document) {
+		this.document = document;
+		this.cache = {};
+	},
+	
+	queueStyleChange: function (node, prop, value) {
+		if (!node.id)
+			node.id = '_layout_style_cache_' + LayoutStyleCache.counter++;
+		this.cache[node.id] = this.cache[node.id] || {};
+		this.cache[node.id][prop] = value;
+	},
+	
+	updateStyles: function () {
+		// create the stylesheet content, like a bastardized innerCSS
+		var css = '';
+		for (var id in this.cache) {
+			css += '#' + id + ' {\n';
+			for (var prop in this.cache[id])
+				css += prop + ': ' + this.cache[id][prop] + ';\n';
+			css += '}\n\n';
+			
+			delete this.cache[id];
+		}
+		if (this.stylesheet)
+			CSSUtils.removeStylesheet(this.stylesheet);
+		this.stylesheet = CSSUtils.addStylesheet(this.document, css);
+	}
+}, {
+	counter: 0
 });
 
 /*
@@ -611,18 +664,18 @@ var LayoutBox = {
 		return children;
 	},
 
-	resetLayout: function (parent, children, axis) {
+	resetLayout: function (parent, children, axis, layout) {
 		// reset parent flex unit
 		LayoutData.set(parent, 'container-unit-' + axis, 0);
 		// reset children properties
 		for (var i = 0; i < children.length; i++) {
 			// reset flexible properties
 			LayoutData.set(children[i], 'unit-' + axis, 0);
-			LayoutBoxChild.updateFlexibleProperties(children[i], axis, 0);
+			LayoutBoxChild.updateFlexibleProperties(children[i], axis, 0, layout);
 		}
 	},
 
-	calculateLayout: function (parent, children, axis) {
+	calculateLayout: function (parent, children, axis, layout) {
 		// calculate available free space in parent
 		var contentSize, contentBoxSize, divisor, oldFlexUnit, newFlexUnit;
 		// get content box size (actual, or desired by flex)
@@ -659,7 +712,7 @@ var LayoutBox = {
 			
 			// set flexible properties
 			var newFlexUnit = Math.max((contentBoxSize - (contentSize - (divisor * oldFlexUnit))) / divisor, 0);
-			LayoutBoxChild.updateFlexibleProperties(children[i], axis, newFlexUnit);
+			LayoutBoxChild.updateFlexibleProperties(children[i], axis, newFlexUnit, layout);
 			
 			// cache flex unit (against flow)
 			if (axis != OrientationBox.getOrientation(parent))
@@ -705,11 +758,11 @@ var LayoutBoxChild = {
 		return LayoutData.has(element, 'divisor-' + axis) && (LayoutData.get(element, 'divisor-' + axis) > 0);
 	},
 	
-	updateFlexibleProperties: function (element, axis, unit) {
+	updateFlexibleProperties: function (element, axis, unit, layout) {
 		// set flexible properties
 		var properties = LayoutData.get(element, 'properties-' + axis) || {};
 		for (var prop in properties)
-			BoxUtils.setCSSLength(element, (prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop]);
+			layout.cache.queueStyleChange(element, (prop.match(/^(width|height)$/) ? 'min-' : '') + prop, unit * properties[prop] + 'px');
 		
 		// cache content-box size
 		if (prop.match(/^(width|height)$/))

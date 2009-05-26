@@ -74,13 +74,21 @@ var CSSUtils = {
 		for (var prop in styles)
 			CSSUtils.setStyleProperty(element.style, prop, styles[prop]);
 	},
-	addStylesheet: function (document, css) {
+	addStylesheet: function (document, content) {
 		var head = document.getElementsByTagName('head')[0] ||
 		    document.documentElement.appendChild(document.createElement('head'));
-		var style = head.appendChild(document.createElement('style'));
-		document.styleSheets[0].cssText !== undefined ?
-		    document.styleSheets[document.styleSheets.length - 1].cssText = css :
-		    style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = css;
+		var style = document.createElement('style');
+		try {
+			style[style.innerText !== undefined ? 'innerText' : 'innerHTML'] = content;
+			head.appendChild(style);
+		} catch (e) {
+			head.appendChild(style);
+			document.styleSheets[document.styleSheets.length - 1].cssText = content;
+		}
+		return style;
+	},
+	removeStylesheet: function (style) {
+		style.parentNode.removeChild(style);
 	},
 
 	// class attribute manipulation (base2)
