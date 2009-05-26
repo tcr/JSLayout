@@ -205,9 +205,9 @@ var BoxUtils = {
 		//[FIX] IE6 doesn't support min-height, min-width
 		if (Utils.isUserAgent(/MSIE 6\./)) {
 			if (property == 'min-height')
-				element.runtimeStyle.height = length + 'px';
+				element.runtimeStyle.setExpression('height', 'Math.max(' + element.uniqueID + '["sty"+"le"].pixelHeight, ' + Number(length) + ') + "px"');
 			if (property == 'min-width')
-				element.runtimeStyle.width = length + 'px';
+				element.runtimeStyle.setExpression('width', 'Math.max(' + element.uniqueID + '["sty"+"le"].pixelWidth, ' + Number(length) + ') + "px"');
 		}
 	},
 	
@@ -342,9 +342,10 @@ var OrientationManager = Structure.extend({
 		OrientationBox.setOrientation(element, axis == 'horizontal' ? axis : 'vertical');
 	},
 	
+//[TODO] integrate/make this better/work correctly
 	updateOrientationMinima: function (element) {
 		// update minimum dimensions of oriented element
-		OrientationBox.updateOrientationMinima(element);
+//		OrientationBox.updateOrientationMinima(element);
 	}
 });
 
@@ -392,9 +393,10 @@ var OrientationBox = {
 	
 	updateOrientationMinima: function (element) {
 		// expand box size to contain floats without wrapping
-		if (OrientationBox.getOrientation(element) == 'horizontal' &&
-		    OrientationData.get(element, 'container-horizontal-shrink'))
+		var axis = OrientationBox.getOrientation(element);
+		if (axis == 'horizontal' && OrientationData.get(element, 'container-horizontal-shrink')) {
 			BoxUtils.setCSSLength(element, 'width', OrientationBox.getContentSize(element));
+		}
 	},
 	
 	sanitizeChildren: function (element) {

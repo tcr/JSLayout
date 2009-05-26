@@ -197,9 +197,9 @@ var BoxUtils = {
 		//[FIX] IE6 doesn't support min-height, min-width
 		if (Utils.isUserAgent(/MSIE 6\./)) {
 			if (property == 'min-height')
-				element.runtimeStyle.height = length + 'px';
+				element.runtimeStyle.setExpression('height', 'Math.max(' + element.uniqueID + '["sty"+"le"].pixelHeight, ' + Number(length) + ') + "px"');
 			if (property == 'min-width')
-				element.runtimeStyle.width = length + 'px';
+				element.runtimeStyle.setExpression('width', 'Math.max(' + element.uniqueID + '["sty"+"le"].pixelWidth, ' + Number(length) + ') + "px"');
 		}
 	},
 	

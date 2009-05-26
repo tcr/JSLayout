@@ -76,7 +76,6 @@ var LayoutManager = OrientationManager.extend({
 	},
 	
 	// layout calculation
-//[TODO] caching of layout objects
 
 	calculate: function ()
 	{
