@@ -165,6 +165,9 @@ var LayoutBox = {
 	getUsedSpace: function (parent, children, axis) {
 		// subtract children flexible space from content size
 		var contentSize = OrientationBox.getContentSize(parent);
+//if (parent.className == 'wysiwyg' && axis == 'vertical') {
+//console.log(contentSize);
+//}
 		for (var i = 0; i < children.length; i++)
 			contentSize -= LayoutBoxChild.getFlexibleSpace(children[i], axis);
 		return contentSize;

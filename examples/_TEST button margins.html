@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+<title>JSLayout Example: Interacting with other plugins</title>
+<style>
+#options { margin-top: 0.25em; border: 1px solid red; }
+input { font-size: 0.8em; padding: 0 2em; margin-left: 0.5em; }
+</style>
+
+<!-- layout -->
+<script src="../jslayout.js"></script>
+<script src="_examples.js"></script>
+<script src="sizzle/sizzle.js"></script>
+
+<script type="text/javascript">
+
+onContent(function () {
+	var layout = new FullLayoutManager(document);
+	Sizzle('#options').forEach(function (element) {
+		layout.setOrientation(element, 'horizontal');
+	});
+});
+
+</script>
+</head>
+
+<body>
+<p>Button margins are too wide in IE. Calculated by EM of child, not EM of parent:</p>
+<div id="options">
+<input type="button" value="Save" class="button" style="display: block">
+<input type="button" value="Cancel" class="button" style="display: block">
+</div>
+<div style="border: 2px solid red; zoom: 1">
+<div style="background: blue; margin-left: 15em;">safsdasd</div>
+<div style="background: blue; margin-left: 15em; font-size: 0.2em;">safsdasd</div>
+<button style="margin-left: 15em; ">safsdasd</button><br>
+<button style="margin-left: 15em; font-size: 0.2em; ">safsdasd</button><br>
+<button style="margin-left: 15em; display: block; ">safsdasd</button>
+<button style="margin-left: 15em; font-size: 0.2em; display: block">safsdasd</button>
+<button style="margin-left: 15em; float: left; display: block">safsdasd</button>
+<button style="margin-left: 15em; font-size: 0.2em; float: left; clear: left; display: block;">safsdasd</button>
+</div>
+</body>
+</html>

@@ -112,11 +112,16 @@ var OrientationBox = {
 	
 //[TODO] other ways of doing this? particularly horizontally...
 	// size of box content, depending on orientation
+	getContentSizeAnchor: null,
 	getContentSize: function (element) {
 		if (OrientationBox.getOrientation(element) == 'vertical') {
-			// get vertical size by differing offsets of an anchor at start and end of content
-			var anchor = DOMUtils.getOwnerDocument(element).createElement('span');
-			CSSUtils.setStyleProperty(anchor.style, 'block');
+			// get vertical size by taking the difference of two anchor offsets
+			if (!OrientationBox.getContentSizeAnchor) {
+				OrientationBox.getContentSizeAnchor = DOMUtils.getOwnerDocument(element).createElement('span');
+				OrientationBox.getContentSizeAnchor.id = '_jslayout_content_size_anchor';
+				CSSUtils.setStyles(OrientationBox.getContentSizeAnchor, {display: 'block', clear: 'left'});
+			} 
+			var anchor = OrientationBox.getContentSizeAnchor;
 			element.appendChild(anchor);
 			var size = BoxUtils.getRelativeOffset(anchor).y;
 			element.insertBefore(anchor, element.firstChild);

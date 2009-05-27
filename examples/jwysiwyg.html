@@ -6,7 +6,7 @@
 <style>
 #container { padding: 1em; background: #eee4cc; }
 #options { margin-top: 0.25em; }
-input { font-size: 0.8em; padding: 0 2em; margin-left: 0.5em; }
+input { font-size: 0.8em; padding: 0 2em; margin-left: 10px; }
 </style>
 
 <!-- jQuery -->
@@ -31,7 +31,7 @@ onContent(function () {
 
 	// initialize layout
 	var layout = new FullLayoutManager(document);
-	Sizzle('#container, div.wysiwyg, div.wysiwyg').forEach(function (element) {
+	Sizzle('#container, div.wysiwyg, div.wysiwyg > iframe').forEach(function (element) {
 		layout.setFlexibleProperty(element, 'height');
 	});
 	Sizzle('#container, div.wysiwyg, div.wysiwyg > iframe').forEach(function (element) {
@@ -53,8 +53,8 @@ onContent(function () {
 &lt;p&gt;This is an example of JSLayout interacting with other plugins, in this case, &lt;a href="http://www.jquery.com/"&gt;jQuery&lt;/a&gt; and &lt;a href="http://code.google.com/p/jwysiwyg/"&gt;jWYSIWYG&lt;/a&gt;. By default, jWYSIWYG uses a fixed-size &lt;code&gt;div&lt;/code&gt; and &lt;code&gt;iframe&lt;/code&gt; in order to contain the content. Just by using a few simple CSS selectors, we can make the editor full-page without interfering with its operation. This is just one example of how JSLayout can be implemented with other plugins and widgets in a simple, non-invasive manner, as it directly and impartially manipulates styles rather than DOM elements.&lt;/p&gt;
 </textarea>
 <div id="options">
-<input type="button" value="Save" class="button">
-<input type="button" value="Cancel" class="button">
+<input type="button" value="Save" class="button" style="display: inline">
+<input type="button" value="Cancel" class="button" style="display: inline">
 </div>
 </div>
 </body>
