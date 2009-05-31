@@ -165,11 +165,10 @@ var LayoutBox = {
 	},
 
 	getUsedSpace: function (parent, children, axis) {
+//[TODO] usedSpace, for horizontal content, should be set as a minima; this would speed up
+// subsequent calls to getUsedSpace, as getContentSize would only be called upon forced minima reset
 		// subtract children flexible space from content size
 		var contentSize = OrientationBox.getContentSize(parent);
-//if (parent.className == 'wysiwyg' && axis == 'vertical') {
-//console.log(contentSize);
-//}
 		for (var i = 0; i < children.length; i++)
 			contentSize -= LayoutBoxChild.getFlexibleSpace(children[i], axis);
 		return contentSize;
