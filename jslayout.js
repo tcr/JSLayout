@@ -568,7 +568,7 @@ var ElementTraversal = {
 
 var LayoutManager = OrientationManager.extend({
 	root: null,
-	cache: null,
+	styleCache: null,
 	constructor: function (root) {
 		// save root
 		this.root = root;
@@ -586,7 +586,7 @@ var LayoutManager = OrientationManager.extend({
 		observer.addListener(Utils.bind(this.recalculate, this));
 		
 		// create style cache
-		this.cache = new LayoutStyleCache(this.document);
+		this.styleCache = new LayoutStyleCache(this.document);
 	},
 
 	getFlexibleProperty: function (element, property) {
@@ -640,20 +640,28 @@ var LayoutManager = OrientationManager.extend({
 	},
 	
 	// layout calculation
+	
+	_nodeCache: null,
 
 	calculate: function ()
 	{
+		// create layout box cache
+		this._nodeCache = {horizontal: [], vertical: []};
+		var nodes = this.root.getElementsByTagName('*');
+		for (var i = 0, parent = this.root; parent; parent = nodes[i++]) {
+			for (var axis in {horizontal: true, vertical: true}) {
+				// add layout boxes with flexible children to cache
+				var children = LayoutBox.getFlexibleChildren(parent, axis);
+				if (children.length)
+					this._nodeCache[axis].push([parent, children]);
+			}
+		}
+	
 		// reset layout (in horizontal, vertical order)
 		for (var axis in {horizontal: true, vertical: true})
-			ElementTraversal.traverse(this.root, {
-				ascend: Utils.bind(function (parent) {
-					// reset layout
-					var children = LayoutBox.getFlexibleChildren(parent, axis);
-					if (children.length)
-						LayoutBox.resetLayout(parent, children, axis, this.cache);
-				}, this)
-			});
-		this.cache.updateStyles();
+			for (var i = 0; i < this._nodeCache[axis].length; i++)
+				LayoutBox.resetLayout(this._nodeCache[axis][i][0], this._nodeCache[axis][i][1], axis, this.styleCache);
+		this.styleCache.updateStyles();
 		
 		// initial recalculate
 		this.recalculate();
@@ -663,15 +671,9 @@ var LayoutManager = OrientationManager.extend({
 	{
 		// recalculate layout (in horizontal, vertical order)
 		for (var axis in {horizontal: true, vertical: true})
-			ElementTraversal.traverse(this.root, {
-				descend: Utils.bind(function (parent) {
-					// calculate layout
-					var children = LayoutBox.getFlexibleChildren(parent, axis);
-					if (children.length)
-						LayoutBox.calculateLayout(parent, children, axis, this.cache);
-				}, this)
-			});
-		this.cache.updateStyles();
+			for (var i = 0; i < this._nodeCache[axis].length; i++)
+				LayoutBox.calculateLayout(this._nodeCache[axis][i][0], this._nodeCache[axis][i][1], axis, this.styleCache);
+		this.styleCache.updateStyles();
 	}
 });
 
